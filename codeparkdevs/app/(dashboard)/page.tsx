@@ -4,94 +4,44 @@ import { useState } from "react";
 import Link from "next/link";
 import {
   MessageSquare, Sparkles, Music, Palette, Code2, Bot,
-  ArrowRight, Zap, TrendingUp, Image, Play, ChevronRight,
-  CheckCircle2,
+  Play, Zap, ChevronRight, CheckCircle2, ArrowUpRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const QUICK_ACTIONS = [
-  { label: "Chat", icon: MessageSquare, href: "/chat", color: "#7C3AED" },
-  { label: "Generate Video", icon: Play, href: "/create", color: "#00FF87" },
-  { label: "Make Music", icon: Music, href: "/create", color: "#EC4899" },
-  { label: "Design", icon: Palette, href: "/studio", color: "#F59E0B" },
-  { label: "Write Code", icon: Code2, href: "/code", color: "#3B82F6" },
-  { label: "Run Agent", icon: Bot, href: "/agents", color: "#00FF87" },
+  { label: "Chat",           icon: MessageSquare, href: "/chat",    accent: "#C8A882" },
+  { label: "Generate Video", icon: Play,          href: "/create",  accent: "#B5704F" },
+  { label: "Make Music",     icon: Music,         href: "/create",  accent: "#8A9E8C" },
+  { label: "Design",         icon: Palette,       href: "/studio",  accent: "#C8A882" },
+  { label: "Write Code",     icon: Code2,         href: "/code",    accent: "#8A9E8C" },
+  { label: "Run Agent",      icon: Bot,           href: "/agents",  accent: "#B5704F" },
 ];
 
-const CREATE_MODES = ["Image", "Video", "Music", "Design", "All"];
+const MODES = ["All", "Image", "Video", "Music", "Design"];
 
-const RECENT_PROJECTS = [
-  {
-    id: 1,
-    title: "Product Launch Video",
-    type: "VIDEO",
-    typeColor: "#7C3AED",
-    gradient: "from-[#7C3AED] to-[#EC4899]",
-    time: "2h ago",
-  },
-  {
-    id: 2,
-    title: "Brand Identity Pack",
-    type: "DESIGN",
-    typeColor: "#EC4899",
-    gradient: "from-[#EC4899] to-[#F59E0B]",
-    time: "5h ago",
-  },
-  {
-    id: 3,
-    title: "Sunset Café Campaign",
-    type: "IMAGE",
-    typeColor: "#00FF87",
-    gradient: "from-[#00FF87] to-[#3B82F6]",
-    time: "Yesterday",
-  },
-  {
-    id: 4,
-    title: "Agent: Lead Research",
-    type: "AGENT",
-    typeColor: "#F59E0B",
-    gradient: "from-[#F59E0B] to-[#EF4444]",
-    time: "Yesterday",
-  },
-  {
-    id: 5,
-    title: "E-comm Chat Script",
-    type: "CHAT",
-    typeColor: "#3B82F6",
-    gradient: "from-[#3B82F6] to-[#7C3AED]",
-    time: "2d ago",
-  },
-  {
-    id: 6,
-    title: "Ambient Soundscape",
-    type: "MUSIC",
-    typeColor: "#EC4899",
-    gradient: "from-[#EC4899] to-[#7C3AED]",
-    time: "3d ago",
-  },
+const RECENT = [
+  { id: 1, title: "Product Launch Video",   type: "VIDEO",  date: "2h ago",  colors: "from-[#B5704F]/60 to-[#C8A882]/30" },
+  { id: 2, title: "Brand Identity Pack",    type: "DESIGN", date: "5h ago",  colors: "from-[#8A9E8C]/60 to-[#C8A882]/25" },
+  { id: 3, title: "Sunset Café Campaign",   type: "IMAGE",  date: "Yesterday",colors: "from-[#C8A882]/50 to-[#B5704F]/30" },
+  { id: 4, title: "Lead Research Agent",    type: "AGENT",  date: "Yesterday",colors: "from-[#B5704F]/40 to-[#8A9E8C]/30" },
+  { id: 5, title: "API Server Boilerplate", type: "CODE",   date: "2d ago",  colors: "from-[#1A1712] to-[#221E18]" },
+  { id: 6, title: "Ambient Soundscape",     type: "MUSIC",  date: "3d ago",  colors: "from-[#8A9E8C]/40 to-[#C8A882]/20" },
 ];
 
-const MOCK_AGENTS = [
-  {
-    name: "Customer Service Bot",
-    status: "active" as const,
-    runs: "1,234",
-    lastRun: "2 min ago",
-    success: 98,
-  },
-  {
-    name: "Lead Research Agent",
-    status: "active" as const,
-    runs: "456",
-    lastRun: "4h ago",
-    success: 94,
-  },
+const TYPE_COLORS: Record<string, string> = {
+  VIDEO:  "#B5704F", DESIGN: "#C8A882", IMAGE: "#8A9E8C",
+  AGENT:  "#B5704F", CODE:   "#A89880", MUSIC: "#8A9E8C",
+};
+
+const AGENTS = [
+  { name: "Customer Service Bot", lastRun: "2 min ago",  runs: "1,234", success: 98 },
+  { name: "Lead Research Agent",  lastRun: "4h ago",     runs: "456",   success: 94 },
 ];
 
 function getGreeting() {
   const h = new Date().getHours();
   if (h < 12) return "Good morning";
-  if (h < 18) return "Good afternoon";
+  if (h < 17) return "Good afternoon";
   return "Good evening";
 }
 
@@ -101,197 +51,221 @@ export default function HomePage() {
 
   return (
     <div className="flex flex-col min-h-full">
-      {/* Top bar */}
-      <header className="h-14 flex items-center justify-between px-5 border-b border-[#1E1E1E] shrink-0">
-        <span className="text-sm font-semibold text-white">Home</span>
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#7C3AED] to-[#EC4899] flex items-center justify-center text-xs font-bold text-white">
-            A
-          </div>
+      {/* ── Top bar ──────────────────────────────────────────────────── */}
+      <header className="h-[60px] flex items-center justify-between px-6 border-b border-[#2C271F] shrink-0">
+        <div className="flex items-center gap-3">
+          <span className="text-sm font-medium text-[#F2EDE6] tracking-wide">Home</span>
+          <span className="artisan-label">[ artisan_build: v1.2 ]</span>
+        </div>
+        <div className="w-7 h-7 rounded-full border border-[#C8A882]/30 bg-[#221E18] flex items-center justify-center text-[11px] font-medium text-[#C8A882] cursor-pointer hover:border-[#C8A882]/60 transition-[border-color] duration-150">
+          A
         </div>
       </header>
 
-      <div className="flex-1 px-5 py-7 max-w-4xl mx-auto w-full space-y-8">
-        {/* Greeting */}
-        <div>
-          <h2 className="text-2xl font-bold text-white">
-            {getGreeting()} 👋
+      <div className="flex-1 max-w-[820px] mx-auto w-full px-6 py-8 space-y-9">
+
+        {/* ── Greeting ─────────────────────────────────────────────── */}
+        <div className="animate-fade-up">
+          <h2
+            className="text-[32px] font-normal text-[#F2EDE6] leading-tight"
+            style={{ fontFamily: "var(--font-dm-serif)", letterSpacing: "-0.02em" }}
+          >
+            {getGreeting()}.
           </h2>
-          <p className="text-sm text-[#666] mt-1">What will you create today?</p>
+          <p className="text-[13px] text-[#6B5E50] mt-1 tracking-wide">
+            What will you craft today?
+          </p>
         </div>
 
-        {/* Quick actions */}
-        <div className="flex flex-wrap gap-2">
-          {QUICK_ACTIONS.map(({ label, icon: Icon, href, color }) => (
+        {/* ── Quick actions ────────────────────────────────────────── */}
+        <div className="flex flex-wrap gap-2 animate-fade-up" style={{ animationDelay: "40ms" }}>
+          {QUICK_ACTIONS.map(({ label, icon: Icon, href, accent }) => (
             <Link
               key={label}
               href={href}
-              className={cn(
-                "flex items-center gap-2 h-9 px-4 rounded-full text-sm font-medium",
-                "border border-[#2A2A2A] bg-[#111111] text-[#AAAAAA]",
-                "hover:border-[#3A3A3A] hover:text-white",
-                "transition-[border-color,color,transform] duration-150 active:scale-[0.97]"
-              )}
+              className="flex items-center gap-2 h-8 px-3.5 rounded-[8px] text-[12px] font-medium border border-[#2C271F] bg-[#1A1712] text-[#A89880] hover:border-[#3A3328] hover:text-[#F2EDE6] transition-[border-color,color,transform] duration-150 active:scale-[0.97]"
             >
-              <Icon className="w-3.5 h-3.5" style={{ color }} />
+              <Icon style={{ width: 12, height: 12, color: accent }} className="shrink-0" />
               {label}
             </Link>
           ))}
         </div>
 
-        {/* Central prompt bar */}
-        <div className="bg-[#111111] rounded-2xl border border-[#2A2A2A] p-4 space-y-3">
+        {/* ── Central prompt bar ───────────────────────────────────── */}
+        <div
+          className="bg-[#1A1712] border border-[#2C271F] rounded-[12px] p-4 space-y-3 animate-fade-up"
+          style={{ animationDelay: "80ms" }}
+        >
+          {/* Artisan motif top */}
+          <div className="flex items-center justify-between mb-1">
+            <span className="font-mono text-[10px] text-[#6B5E50] tracking-wider">{"{ craft }"}</span>
+            <span className="font-mono text-[10px] text-[#6B5E50]">status: ready</span>
+          </div>
           <textarea
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
             placeholder="Describe what you want to create…"
             rows={3}
-            className={cn(
-              "w-full bg-transparent text-white placeholder:text-[#444] text-sm resize-none",
-              "focus:outline-none leading-relaxed"
-            )}
+            className="w-full bg-transparent text-[#F2EDE6] placeholder:text-[#6B5E50]/60 text-[14px] resize-none focus:outline-none leading-relaxed"
+            style={{ fontFamily: "var(--font-inter)" }}
           />
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between pt-1 border-t border-[#2C271F]">
             {/* Mode pills */}
             <div className="flex gap-1">
-              {CREATE_MODES.map((m) => (
+              {MODES.map((m) => (
                 <button
                   key={m}
                   onClick={() => setMode(m)}
                   className={cn(
-                    "h-7 px-3 rounded-full text-xs font-medium",
+                    "h-6 px-2.5 rounded-full text-[11px] font-medium tracking-wide",
                     "transition-[background-color,color] duration-150 active:scale-[0.97]",
                     mode === m
-                      ? "bg-[#00FF87]/15 text-[#00FF87] border border-[#00FF87]/30"
-                      : "text-[#666] hover:text-white hover:bg-[#1A1A1A]"
+                      ? "bg-[#C8A882]/15 text-[#C8A882] border border-[#C8A882]/25"
+                      : "text-[#6B5E50] hover:text-[#A89880]"
                   )}
                 >
                   {m}
                 </button>
               ))}
             </div>
-            {/* Generate button */}
             <button
-              className={cn(
-                "flex items-center gap-2 h-9 px-5 rounded-full text-sm font-semibold",
-                "bg-[#00FF87] text-black",
-                "hover:bg-[#00E077] hover:shadow-[0_0_20px_rgba(0,255,135,0.35)]",
-                "transition-[background-color,box-shadow,transform] duration-150 active:scale-[0.97]",
-                !prompt && "opacity-50 pointer-events-none"
-              )}
               disabled={!prompt}
+              className={cn(
+                "flex items-center gap-2 h-8 px-5 rounded-[8px] text-[12px] font-semibold",
+                "bg-[#C8A882] text-[#111009]",
+                "hover:bg-[#BFA070] hover:shadow-[0_0_16px_rgba(200,168,130,0.3)]",
+                "transition-[background-color,box-shadow,transform] duration-150 active:scale-[0.97]",
+                !prompt && "opacity-40 pointer-events-none"
+              )}
             >
-              <Zap className="w-3.5 h-3.5" />
+              <Zap style={{ width: 12, height: 12 }} />
               Generate
             </button>
           </div>
         </div>
 
-        {/* Stats row */}
-        <div className="grid grid-cols-3 gap-3">
+        {/* ── Stats row ────────────────────────────────────────────── */}
+        <div className="grid grid-cols-3 gap-3 animate-fade-up" style={{ animationDelay: "120ms" }}>
           {[
-            { label: "Total Creations", value: "1,284", icon: Sparkles, color: "#7C3AED" },
-            { label: "Active Agents", value: "2 / 3", icon: Bot, color: "#00FF87" },
-            { label: "Credits Left", value: "240", icon: Zap, color: "#F59E0B" },
-          ].map(({ label, value, icon: Icon, color }) => (
-            <div
-              key={label}
-              className="bg-[#111111] border border-[#2A2A2A] rounded-2xl p-4"
-            >
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-xs text-[#666]">{label}</span>
-                <div
-                  className="w-7 h-7 rounded-lg flex items-center justify-center"
-                  style={{ backgroundColor: `${color}18` }}
-                >
-                  <Icon className="w-3.5 h-3.5" style={{ color }} />
-                </div>
-              </div>
-              <p className="text-2xl font-bold text-white">{value}</p>
+            { label: "Total Creations", value: "1,284", mono: "const created" },
+            { label: "Active Agents",   value: "2 / 3",  mono: "agents.running" },
+            { label: "Credits Left",    value: "240",    mono: "credits.balance" },
+          ].map(({ label, value, mono }) => (
+            <div key={label} className="bg-[#1A1712] border border-[#2C271F] rounded-[12px] p-4">
+              <p className="font-mono text-[10px] text-[#6B5E50] tracking-wide mb-3">{mono}</p>
+              <p
+                className="text-[28px] text-[#F2EDE6] leading-none"
+                style={{ fontFamily: "var(--font-dm-serif)", letterSpacing: "-0.02em" }}
+              >
+                {value}
+              </p>
+              <p className="text-[11px] text-[#6B5E50] mt-1.5 tracking-wide">{label}</p>
             </div>
           ))}
         </div>
 
-        {/* Recent projects */}
-        <section>
+        {/* ── Recent projects ──────────────────────────────────────── */}
+        <section className="animate-fade-up" style={{ animationDelay: "160ms" }}>
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold text-white">Recent Projects</h3>
+            <h3
+              className="text-[18px] text-[#F2EDE6]"
+              style={{ fontFamily: "var(--font-dm-serif)" }}
+            >
+              Recent Projects
+            </h3>
             <Link
               href="/library"
-              className="flex items-center gap-1 text-xs text-[#666] hover:text-white transition-colors duration-150"
+              className="flex items-center gap-1 text-[12px] text-[#6B5E50] hover:text-[#C8A882] transition-colors duration-150"
             >
-              View all <ChevronRight className="w-3 h-3" />
+              View all <ChevronRight style={{ width: 12, height: 12 }} />
             </Link>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            {RECENT_PROJECTS.map((p) => (
+            {RECENT.map((p, i) => (
               <div
                 key={p.id}
-                className={cn(
-                  "group relative rounded-2xl overflow-hidden cursor-pointer",
-                  "border border-[#2A2A2A] hover:border-[#3A3A3A]",
-                  "transition-[border-color,transform] duration-200",
-                  "@media (hover: hover) { hover:-translate-y-0.5 }"
-                )}
+                className="group relative rounded-[12px] overflow-hidden border border-[#2C271F] hover:border-[#3A3328] cursor-pointer transition-[border-color,transform] duration-200 hover:-translate-y-0.5 animate-fade-up"
+                style={{ animationDelay: `${160 + i * 30}ms` }}
               >
-                {/* Thumbnail gradient */}
-                <div className={cn("h-28 bg-gradient-to-br", p.gradient, "opacity-70")} />
+                {/* Gradient thumbnail */}
+                <div className={cn("h-28 bg-gradient-to-br", p.colors)} />
+                {/* Decorative bracket */}
+                <div className="absolute top-3 right-3 font-mono text-[11px] text-white/20">{"{ }"}</div>
                 {/* Type badge */}
                 <span
-                  className="absolute top-2 left-2 text-[10px] font-semibold px-2 py-0.5 rounded-full"
-                  style={{ backgroundColor: `${p.typeColor}25`, color: p.typeColor }}
+                  className="absolute top-2.5 left-2.5 font-mono text-[10px] font-medium px-2 py-0.5 rounded-[4px] border"
+                  style={{
+                    backgroundColor: `${TYPE_COLORS[p.type]}15`,
+                    color: TYPE_COLORS[p.type],
+                    borderColor: `${TYPE_COLORS[p.type]}30`,
+                  }}
                 >
                   {p.type}
                 </span>
                 {/* Info */}
-                <div className="p-3 bg-[#111111]">
-                  <p className="text-sm font-medium text-white truncate">{p.title}</p>
-                  <p className="text-xs text-[#555] mt-0.5">{p.time}</p>
+                <div className="p-3 bg-[#1A1712]">
+                  <p className="text-[13px] font-medium text-[#F2EDE6] truncate">{p.title}</p>
+                  <p className="text-[11px] text-[#6B5E50] mt-0.5">{p.date}</p>
+                </div>
+                {/* Hover arrow */}
+                <div className="absolute top-2.5 right-2.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+                  <ArrowUpRight style={{ width: 14, height: 14 }} className="text-white/40" />
                 </div>
               </div>
             ))}
           </div>
         </section>
 
-        {/* Agent status */}
-        <section>
+        {/* ── Agent status ─────────────────────────────────────────── */}
+        <section className="animate-fade-up" style={{ animationDelay: "320ms" }}>
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold text-white">Agent Status</h3>
+            <h3
+              className="text-[18px] text-[#F2EDE6]"
+              style={{ fontFamily: "var(--font-dm-serif)" }}
+            >
+              Agent Status
+            </h3>
             <Link
               href="/agents"
-              className="flex items-center gap-1 text-xs text-[#666] hover:text-white transition-colors duration-150"
+              className="flex items-center gap-1 text-[12px] text-[#6B5E50] hover:text-[#C8A882] transition-colors duration-150"
             >
-              Manage <ChevronRight className="w-3 h-3" />
+              Manage <ChevronRight style={{ width: 12, height: 12 }} />
             </Link>
           </div>
           <div className="space-y-2">
-            {MOCK_AGENTS.map((agent) => (
+            {AGENTS.map((agent) => (
               <div
                 key={agent.name}
-                className="flex items-center justify-between bg-[#111111] border border-[#2A2A2A] rounded-xl px-4 py-3"
+                className="flex items-center justify-between bg-[#1A1712] border border-[#2C271F] rounded-[10px] px-4 py-3 hover:border-[#3A3328] transition-[border-color] duration-150"
               >
                 <div className="flex items-center gap-3">
-                  {/* Pulse dot */}
                   <div className="relative">
-                    <div className="w-2 h-2 rounded-full bg-[#00FF87]" />
-                    <div className="absolute inset-0 rounded-full bg-[#00FF87] animate-ping opacity-30" />
+                    <div className="w-2 h-2 rounded-full bg-[#8A9E8C]" />
+                    <div className="absolute inset-0 rounded-full bg-[#8A9E8C] animate-ping opacity-30" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-white">{agent.name}</p>
-                    <p className="text-xs text-[#555]">Last run {agent.lastRun}</p>
+                    <p className="text-[13px] font-medium text-[#F2EDE6]">{agent.name}</p>
+                    <p className="font-mono text-[10px] text-[#6B5E50]">last_run: {agent.lastRun}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
                   <div className="text-right">
-                    <p className="text-xs text-[#AAAAAA] font-medium">{agent.runs} runs</p>
-                    <p className="text-xs text-[#00FF87]">{agent.success}% success</p>
+                    <p className="text-[12px] text-[#A89880]">{agent.runs} runs</p>
+                    <p className="font-mono text-[11px] text-[#8A9E8C]">{agent.success}% success</p>
                   </div>
-                  <CheckCircle2 className="w-4 h-4 text-[#00FF87]" />
+                  <CheckCircle2 style={{ width: 14, height: 14 }} className="text-[#8A9E8C]" />
                 </div>
               </div>
             ))}
           </div>
+
+          {/* Footer artisan mark */}
+          <div className="mt-8 pt-6 border-t border-[#2C271F] flex items-center justify-between">
+            <span className="font-mono text-[10px] text-[#6B5E50]">Codeparkdevs · 2025 · All rights reserved</span>
+            <span className="font-mono text-[10px] text-[#6B5E50]">[ status: crafted ]</span>
+          </div>
         </section>
+
       </div>
     </div>
   );

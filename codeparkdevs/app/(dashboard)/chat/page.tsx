@@ -1,429 +1,121 @@
-'use client'
+"use client";
 
-import { useState, useRef, useEffect } from 'react'
-import {
-  Plus,
-  Search,
-  Send,
-  Mic,
-  Paperclip,
-  ChevronRight,
-  PanelRight,
-  MessageSquare,
-  Zap,
-  Globe,
-  Sparkles,
-  BookOpen,
-  Code2,
-  Bot,
-  User,
-  X,
-} from 'lucide-react'
+import { useState, useRef, useEffect } from "react";
+import { Plus, Search, Send, Mic, Paperclip, Pin, MessageSquare, Globe, Sparkles, BookOpen, Code2, Brain } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const MODES = [
-  { id: 'chat', label: 'Chat', icon: MessageSquare },
-  { id: 'think', label: 'Think', icon: Zap },
-  { id: 'search', label: 'Search', icon: Globe },
-  { id: 'create', label: 'Create', icon: Sparkles },
-  { id: 'research', label: 'Research', icon: BookOpen },
-  { id: 'code', label: 'Code', icon: Code2 },
-]
+  { id: "chat",     label: "Chat",     icon: MessageSquare },
+  { id: "think",    label: "Think",    icon: Brain },
+  { id: "search",   label: "Search",   icon: Globe },
+  { id: "create",   label: "Create",   icon: Sparkles },
+  { id: "research", label: "Research", icon: BookOpen },
+  { id: "code",     label: "Code",     icon: Code2 },
+];
 
-const CHAT_HISTORY = {
-  Today: [
-    { id: '1', title: 'Build a SaaS landing page', time: '2:41 PM' },
-    { id: '2', title: 'Python data analysis script', time: '11:03 AM' },
-    { id: '3', title: 'Marketing campaign ideas', time: '9:17 AM' },
-  ],
-  Yesterday: [
-    { id: '4', title: 'Explain React Server Components', time: '6:55 PM' },
-    { id: '5', title: 'Write a cover letter for tech job', time: '3:20 PM' },
-    { id: '6', title: 'SQL query optimization tips', time: '10:42 AM' },
-  ],
-  'This Week': [
-    { id: '7', title: 'Next.js 16 migration guide', time: 'Mon' },
-    { id: '8', title: 'Design system color tokens', time: 'Mon' },
-    { id: '9', title: 'Stripe webhook integration', time: 'Sun' },
-    { id: '10', title: 'Docker Compose setup for dev', time: 'Sat' },
-  ],
-}
+const HISTORY = [
+  { id: 1, title: "Brand identity direction", time: "2h ago", pinned: true },
+  { id: 2, title: "API architecture review",  time: "Yesterday" },
+  { id: 3, title: "Content calendar Q3",      time: "2d ago" },
+];
 
-const MOCK_MESSAGES = [
-  {
-    id: '1',
-    role: 'user',
-    content: 'Can you help me build a real-time analytics dashboard using Next.js and Recharts? I need it to show live user counts, conversion rates, and revenue metrics.',
-    time: '2:38 PM',
-  },
-  {
-    id: '2',
-    role: 'assistant',
-    content: `Absolutely! Here's a solid approach for a real-time analytics dashboard with Next.js and Recharts.
+const INITIAL_MESSAGES = [
+  { id: 1, role: "user",      content: "Can you review our brand identity approach? We're going for an artisan, editorial aesthetic." },
+  { id: 2, role: "assistant", content: "Your editorial serif direction is compelling — DM Serif Display with JetBrains Mono creates a rare tension between craft and code that few tech brands achieve.\n\nThe key is restraint: let the typography carry the weight. Warm off-whites against Carbon Ink with Raw Clay (#C8A882) as your sole accent will feel premium without shouting.\n\nUse the { } bracket as a recurring micro-motif — it bridges your dev DNA with the artisan narrative beautifully." },
+  { id: 3, role: "user",      content: "That's exactly the direction. What about the agents dashboard?" },
+];
 
-**Architecture Overview**
-
-We'll use:
-- **Next.js App Router** for the layout and server components
-- **Recharts** for interactive charts
-- **Server-Sent Events (SSE)** or **WebSockets** for live data streaming
-- **Zustand** or React state for local data management
-
-**Core Components**
-
-1. \`MetricCard\` — displays a single KPI with trend indicator
-2. \`LiveLineChart\` — real-time time-series chart
-3. \`ConversionFunnel\` — step-by-step funnel visualization
-4. \`RevenueBarChart\` — daily/weekly revenue breakdown
-
-**Quick Start**
-
-\`\`\`typescript
-// app/dashboard/analytics/page.tsx
-import { MetricCard } from '@/components/MetricCard'
-import { LiveChart } from '@/components/LiveChart'
-
-export default function AnalyticsPage() {
+function Bubble({ role, content }: { role: string; content: string }) {
+  const isUser = role === "user";
   return (
-    <div className="grid grid-cols-4 gap-4">
-      <MetricCard title="Active Users" value={1_247} trend={+12.3} />
-      <MetricCard title="Conversion" value="3.8%" trend={+0.4} />
-      <MetricCard title="Revenue" value="$48,320" trend={+8.1} />
-      <MetricCard title="Avg Session" value="4m 12s" trend={-0.3} />
-      <div className="col-span-4">
-        <LiveChart endpoint="/api/metrics/stream" />
+    <div className={cn("flex gap-3", isUser && "flex-row-reverse")}>
+      <div className={cn("w-7 h-7 rounded-full shrink-0 flex items-center justify-center text-[11px] font-medium border", isUser ? "border-[#C8A882]/30 bg-[#221E18] text-[#C8A882]" : "border-[#2C271F] bg-[#1A1712] text-[#8A9E8C]")}>
+        {isUser ? "A" : "C"}
+      </div>
+      <div className={cn("max-w-[72%] px-4 py-3 rounded-[12px] text-[13px] leading-relaxed whitespace-pre-line", isUser ? "bg-[#C8A882]/10 text-[#F2EDE6] border border-[#C8A882]/18 rounded-tr-[4px]" : "bg-[#1A1712] text-[#A89880] border border-[#2C271F] rounded-tl-[4px]")}>
+        {content}
       </div>
     </div>
-  )
-}
-\`\`\`
-
-Want me to generate the full component files, the SSE API route, and the chart configurations?`,
-    time: '2:39 PM',
-  },
-  {
-    id: '3',
-    role: 'user',
-    content: 'Yes please! Generate the full SSE API route and the LiveChart component with Recharts.',
-    time: '2:41 PM',
-  },
-]
-
-function StreamingDots() {
-  return (
-    <div className="flex items-center gap-1 px-1 py-2">
-      {[0, 1, 2].map((i) => (
-        <span
-          key={i}
-          className="w-2 h-2 rounded-full bg-[#00FF87] animate-bounce"
-          style={{ animationDelay: `${i * 0.15}s`, animationDuration: '0.8s' }}
-        />
-      ))}
-    </div>
-  )
+  );
 }
 
 export default function ChatPage() {
-  const [activeMode, setActiveMode] = useState('chat')
-  const [input, setInput] = useState('')
-  const [messages, setMessages] = useState(MOCK_MESSAGES)
-  const [isStreaming, setIsStreaming] = useState(false)
-  const [activeChatId, setActiveChatId] = useState('1')
-  const [searchQuery, setSearchQuery] = useState('')
-  const [showCanvas, setShowCanvas] = useState(false)
-  const [sidebarOpen, setSidebarOpen] = useState(true)
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
-  const messagesEndRef = useRef<HTMLDivElement>(null)
+  const [mode, setMode] = useState("chat");
+  const [input, setInput] = useState("");
+  const [messages, setMessages] = useState(INITIAL_MESSAGES);
+  const bottomRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages, isStreaming])
+  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
 
-  function handleSend() {
-    if (!input.trim()) return
-    const userMsg = {
-      id: Date.now().toString(),
-      role: 'user' as const,
-      content: input.trim(),
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    }
-    setMessages((prev) => [...prev, userMsg])
-    setInput('')
-    setIsStreaming(true)
-    setTimeout(() => {
-      setIsStreaming(false)
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: (Date.now() + 1).toString(),
-          role: 'assistant',
-          content: 'Here\'s what I\'ve prepared for you! I\'ll generate the full SSE route and LiveChart component with Recharts, including real-time data updates via `EventSource`.',
-          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        },
-      ])
-    }, 2200)
-  }
-
-  function handleKeyDown(e: React.KeyboardEvent) {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault()
-      handleSend()
-    }
-  }
-
-  function handleTextareaChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
-    setInput(e.target.value)
-    const el = textareaRef.current
-    if (el) {
-      el.style.height = 'auto'
-      el.style.height = Math.min(el.scrollHeight, 120) + 'px'
-    }
-  }
-
-  const filteredHistory = Object.entries(CHAT_HISTORY).reduce(
-    (acc, [group, items]) => {
-      const filtered = items.filter((item) =>
-        item.title.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-      if (filtered.length) acc[group] = filtered
-      return acc
-    },
-    {} as Record<string, typeof CHAT_HISTORY['Today']>
-  )
+  const send = () => {
+    if (!input.trim()) return;
+    setMessages((prev) => [...prev,
+      { id: prev.length + 1, role: "user", content: input },
+      { id: prev.length + 2, role: "assistant", content: "Artisan labels like `[ status: active ]` and monospace run counts give the agent dashboard that crafted-data aesthetic. Sage Smoke (#8A9E8C) pulse dots for live agents feel premium without the neon anxiety of typical AI dashboards." },
+    ]);
+    setInput("");
+  };
 
   return (
-    <div className="flex h-screen bg-[#0A0A0A] text-white overflow-hidden">
-      {/* Left Sidebar */}
-      <aside
-        className={`${
-          sidebarOpen ? 'w-64' : 'w-0'
-        } hidden md:flex flex-col flex-shrink-0 border-r border-[#2A2A2A] bg-[#111111] transition-all duration-200 overflow-hidden`}
-      >
-        {/* New Chat */}
-        <div className="p-3 border-b border-[#2A2A2A]">
-          <button
-            onClick={() => {
-              setMessages([])
-              setActiveChatId('')
-            }}
-            className="flex items-center gap-2 w-full px-3 py-2.5 rounded-lg bg-[#00FF87]/10 border border-[#00FF87]/30 text-[#00FF87] text-sm font-medium hover:bg-[#00FF87]/20 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            New Chat
+    <div className="flex h-full">
+      <aside className="hidden md:flex w-[210px] flex-col border-r border-[#2C271F] bg-[#0E0C08]">
+        <div className="p-3 border-b border-[#2C271F]">
+          <button className="flex items-center gap-2 w-full h-9 px-3 rounded-[8px] text-[12px] font-medium border border-[#2C271F] text-[#A89880] hover:border-[#3A3328] hover:text-[#F2EDE6] transition-[border-color,color] duration-150 active:scale-[0.98]">
+            <Plus style={{ width: 13, height: 13 }} /> New Chat
           </button>
         </div>
-
-        {/* Search */}
-        <div className="px-3 py-2 border-b border-[#2A2A2A]">
-          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[#0A0A0A] border border-[#2A2A2A]">
-            <Search className="w-3.5 h-3.5 text-[#AAAAAA]" />
-            <input
-              type="text"
-              placeholder="Search chats..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="flex-1 bg-transparent text-sm text-white placeholder-[#AAAAAA] outline-none"
-            />
+        <div className="p-2 border-b border-[#2C271F]">
+          <div className="flex items-center gap-2 bg-[#1A1712] border border-[#2C271F] rounded-[8px] px-3 h-8">
+            <Search style={{ width: 11, height: 11 }} className="text-[#6B5E50] shrink-0" />
+            <input placeholder="Search…" className="flex-1 bg-transparent text-[11px] text-[#F2EDE6] placeholder:text-[#6B5E50] focus:outline-none" />
           </div>
         </div>
-
-        {/* History */}
-        <div className="flex-1 overflow-y-auto py-2 scrollbar-hide">
-          {Object.entries(filteredHistory).map(([group, items]) => (
-            <div key={group} className="mb-2">
-              <p className="px-4 py-1.5 text-xs font-semibold text-[#AAAAAA] uppercase tracking-wider">
-                {group}
-              </p>
-              {items.map((item) => (
-                <button
-                  key={item.id}
-                  onClick={() => setActiveChatId(item.id)}
-                  className={`w-full text-left px-4 py-2.5 flex items-center justify-between group hover:bg-[#1A1A1A] transition-colors ${
-                    activeChatId === item.id ? 'bg-[#1A1A1A]' : ''
-                  }`}
-                >
-                  <span
-                    className={`text-sm truncate flex-1 pr-2 ${
-                      activeChatId === item.id ? 'text-white' : 'text-[#AAAAAA]'
-                    }`}
-                  >
-                    {item.title}
-                  </span>
-                  <span className="text-xs text-[#555555] flex-shrink-0">{item.time}</span>
-                </button>
-              ))}
-            </div>
+        <div className="flex-1 overflow-y-auto p-2">
+          <p className="px-2 py-1.5 font-mono text-[9px] text-[#6B5E50] tracking-widest uppercase">Today</p>
+          {HISTORY.map((h) => (
+            <button key={h.id} className={cn("w-full text-left flex items-center gap-2 px-2.5 py-2 rounded-[8px] text-[12px] transition-[background-color,color] duration-150", h.id === 1 ? "bg-[#221E18] text-[#F2EDE6]" : "text-[#6B5E50] hover:bg-[#16130E] hover:text-[#A89880]")}>
+              {h.pinned && <Pin style={{ width: 9, height: 9 }} className="text-[#C8A882] shrink-0" />}
+              <span className="truncate">{h.title}</span>
+            </button>
           ))}
         </div>
       </aside>
 
-      {/* Main Chat */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Top Bar */}
-        <header className="flex items-center justify-between px-4 py-3 border-b border-[#2A2A2A] bg-[#111111] flex-shrink-0">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="p-1.5 rounded-md hover:bg-[#2A2A2A] text-[#AAAAAA] transition-colors"
-            >
-              <ChevronRight
-                className={`w-4 h-4 transition-transform ${sidebarOpen ? 'rotate-180' : ''}`}
-              />
-            </button>
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-6 rounded-full bg-gradient-to-br from-[#00FF87] to-[#7C3AED] flex items-center justify-center">
-                <Bot className="w-3.5 h-3.5 text-black" />
-              </div>
-              <span className="font-semibold text-sm text-white">CodePark AI</span>
-              <span className="px-2 py-0.5 text-xs bg-[#7C3AED]/20 text-[#7C3AED] rounded-full border border-[#7C3AED]/30">
-                Pro
-              </span>
-            </div>
+        <header className="h-[60px] flex items-center justify-between px-5 border-b border-[#2C271F] shrink-0">
+          <div className="flex gap-1">
+            {MODES.map(({ id, label, icon: Icon }) => (
+              <button key={id} onClick={() => setMode(id)} className={cn("flex items-center gap-1.5 h-7 px-2.5 rounded-full text-[11px] font-medium tracking-wide transition-[background-color,color] duration-150 active:scale-[0.97]", mode === id ? "bg-[#C8A882]/12 text-[#C8A882] border border-[#C8A882]/22" : "text-[#6B5E50] hover:text-[#A89880]")}>
+                <Icon style={{ width: 11, height: 11 }} />{label}
+              </button>
+            ))}
           </div>
-          <button
-            onClick={() => setShowCanvas(!showCanvas)}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors border ${
-              showCanvas
-                ? 'bg-[#00FF87]/10 border-[#00FF87]/30 text-[#00FF87]'
-                : 'border-[#2A2A2A] text-[#AAAAAA] hover:bg-[#1A1A1A]'
-            }`}
-          >
-            <PanelRight className="w-4 h-4" />
-            Canvas
-          </button>
+          <span className="artisan-label">[ mode: {mode} ]</span>
         </header>
 
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto px-4 py-6 space-y-6 scrollbar-hide">
-          {messages.map((msg) => (
-            <div
-              key={msg.id}
-              className={`flex items-start gap-3 ${
-                msg.role === 'user' ? 'flex-row-reverse' : ''
-              }`}
-            >
-              {/* Avatar */}
-              <div
-                className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
-                  msg.role === 'user'
-                    ? 'bg-gradient-to-br from-[#7C3AED] to-[#EC4899]'
-                    : 'bg-gradient-to-br from-[#00FF87] to-[#7C3AED]'
-                }`}
-              >
-                {msg.role === 'user' ? (
-                  <User className="w-4 h-4 text-white" />
-                ) : (
-                  <Bot className="w-4 h-4 text-black" />
-                )}
-              </div>
-
-              {/* Bubble */}
-              <div
-                className={`max-w-[75%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
-                  msg.role === 'user'
-                    ? 'bg-[#00FF87]/10 border border-[#00FF87]/20 text-white rounded-tr-sm'
-                    : 'bg-[#111111] border border-[#2A2A2A] text-[#DDDDDD] rounded-tl-sm'
-                }`}
-              >
-                <pre className="whitespace-pre-wrap font-sans">{msg.content}</pre>
-                <p className="text-xs text-[#555555] mt-2">{msg.time}</p>
-              </div>
-            </div>
-          ))}
-
-          {/* Streaming indicator */}
-          {isStreaming && (
-            <div className="flex items-start gap-3">
-              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-[#00FF87] to-[#7C3AED] flex items-center justify-center">
-                <Bot className="w-4 h-4 text-black" />
-              </div>
-              <div className="bg-[#111111] border border-[#2A2A2A] rounded-2xl rounded-tl-sm px-4 py-3">
-                <StreamingDots />
-              </div>
-            </div>
-          )}
-          <div ref={messagesEndRef} />
-        </div>
-
-        {/* Mode Chips */}
-        <div className="flex items-center gap-2 px-4 pt-3 pb-1 border-t border-[#2A2A2A] bg-[#0A0A0A] overflow-x-auto scrollbar-hide flex-shrink-0">
-          {MODES.map((mode) => {
-            const Icon = mode.icon
-            return (
-              <button
-                key={mode.id}
-                onClick={() => setActiveMode(mode.id)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all border ${
-                  activeMode === mode.id
-                    ? 'bg-[#00FF87] text-black border-[#00FF87]'
-                    : 'bg-[#111111] text-[#AAAAAA] border-[#2A2A2A] hover:border-[#00FF87]/40 hover:text-white'
-                }`}
-              >
-                <Icon className="w-3 h-3" />
-                {mode.label}
-              </button>
-            )
-          })}
-        </div>
-
-        {/* Input Bar */}
-        <div className="px-4 py-3 bg-[#0A0A0A] flex-shrink-0">
-          <div className="flex items-end gap-3 bg-[#111111] border border-[#2A2A2A] rounded-2xl px-4 py-3 focus-within:border-[#00FF87]/40 transition-colors">
-            <button className="flex-shrink-0 p-1.5 rounded-lg hover:bg-[#2A2A2A] text-[#AAAAAA] hover:text-white transition-colors mb-0.5">
-              <Paperclip className="w-4 h-4" />
-            </button>
-            <textarea
-              ref={textareaRef}
-              value={input}
-              onChange={handleTextareaChange}
-              onKeyDown={handleKeyDown}
-              placeholder="Message CodePark AI..."
-              rows={1}
-              className="flex-1 bg-transparent text-sm text-white placeholder-[#555555] outline-none resize-none leading-relaxed min-h-[24px] max-h-[120px]"
-            />
-            <div className="flex items-center gap-2 flex-shrink-0 mb-0.5">
-              <button className="p-1.5 rounded-lg hover:bg-[#2A2A2A] text-[#AAAAAA] hover:text-white transition-colors">
-                <Mic className="w-4 h-4" />
-              </button>
-              <button
-                onClick={handleSend}
-                disabled={!input.trim() || isStreaming}
-                className={`p-1.5 rounded-lg transition-all ${
-                  input.trim() && !isStreaming
-                    ? 'bg-[#00FF87] text-black shadow-[0_0_12px_rgba(0,255,135,0.5)] hover:shadow-[0_0_20px_rgba(0,255,135,0.7)]'
-                    : 'bg-[#2A2A2A] text-[#555555]'
-                }`}
-              >
-                <Send className="w-4 h-4" />
-              </button>
+        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
+          {messages.map((m) => <Bubble key={m.id} role={m.role} content={m.content} />)}
+          <div className="flex gap-3">
+            <div className="w-7 h-7 rounded-full shrink-0 flex items-center justify-center text-[11px] border border-[#2C271F] bg-[#1A1712] text-[#8A9E8C]">C</div>
+            <div className="flex items-center gap-1 px-4 py-3 bg-[#1A1712] border border-[#2C271F] rounded-[12px] rounded-tl-[4px]">
+              {[0,1,2].map((i) => <span key={i} className="w-1.5 h-1.5 rounded-full bg-[#6B5E50] animate-bounce" style={{ animationDelay: `${i*150}ms`, animationDuration: "900ms" }} />)}
             </div>
           </div>
-          <p className="text-center text-xs text-[#444444] mt-2">
-            CodePark AI can make mistakes. Check important info.
-          </p>
+          <div ref={bottomRef} />
+        </div>
+
+        <div className="p-4 border-t border-[#2C271F]">
+          <div className="flex items-end gap-2 bg-[#1A1712] border border-[#2C271F] rounded-[12px] px-4 py-3 focus-within:border-[#C8A882]/35 transition-[border-color] duration-150">
+            <button className="text-[#6B5E50] hover:text-[#A89880] transition-colors duration-150 mb-0.5 active:scale-[0.95]"><Paperclip style={{ width: 14, height: 14 }} /></button>
+            <textarea value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }}} placeholder="Message Claude…" rows={1} className="flex-1 bg-transparent text-[13px] text-[#F2EDE6] placeholder:text-[#6B5E50]/60 resize-none focus:outline-none leading-relaxed" style={{ maxHeight: 120 }} />
+            <div className="flex items-center gap-1 mb-0.5">
+              <button className="text-[#6B5E50] hover:text-[#A89880] transition-colors duration-150 active:scale-[0.95]"><Mic style={{ width: 14, height: 14 }} /></button>
+              <button onClick={send} disabled={!input.trim()} className={cn("w-7 h-7 rounded-[6px] flex items-center justify-center bg-[#C8A882] text-[#111009] hover:bg-[#BFA070] transition-[background-color,transform] duration-150 active:scale-[0.95]", !input.trim() && "opacity-30 pointer-events-none")}><Send style={{ width: 12, height: 12 }} /></button>
+            </div>
+          </div>
+          <p className="text-center font-mono text-[10px] text-[#6B5E50] mt-2">Codeparkdevs AI · crafted responses · use with judgement</p>
         </div>
       </div>
-
-      {/* Canvas Panel */}
-      {showCanvas && (
-        <aside className="w-96 flex-shrink-0 border-l border-[#2A2A2A] bg-[#111111] flex flex-col">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-[#2A2A2A]">
-            <span className="font-semibold text-sm">Canvas</span>
-            <button
-              onClick={() => setShowCanvas(false)}
-              className="p-1.5 rounded-md hover:bg-[#2A2A2A] text-[#AAAAAA]"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-          <div className="flex-1 flex items-center justify-center text-[#444444] text-sm">
-            <div className="text-center space-y-2">
-              <Code2 className="w-8 h-8 mx-auto text-[#2A2A2A]" />
-              <p>Canvas will appear here</p>
-              <p className="text-xs text-[#333333]">Ask AI to generate code, diagrams, or designs</p>
-            </div>
-          </div>
-        </aside>
-      )}
     </div>
-  )
+  );
 }

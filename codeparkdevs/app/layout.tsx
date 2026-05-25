@@ -1,36 +1,60 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono, Inter } from "next/font/google";
+import { Inter, DM_Serif_Display, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "sonner";
 import Providers from "@/components/providers";
 
-const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
-const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
-const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
+const inter = Inter({
+  variable: "--font-inter",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const dmSerifDisplay = DM_Serif_Display({
+  variable: "--font-dm-serif",
+  subsets: ["latin"],
+  weight: ["400"],
+  display: "swap",
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  variable: "--font-jetbrains-mono",
+  subsets: ["latin"],
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: {
-    default: "CodeParkDevs — Build anything. Create everything. Automate the rest.",
-    template: "%s | CodeParkDevs",
+    default: "Codeparkdevs — Crafted code. Thoughtful tech.",
+    template: "%s | Codeparkdevs",
   },
-  description: "The world's first truly unified AI creative and business platform.",
+  description: "AI • Dev Tools • Automation. We build robust, scalable solutions that bridge the gap between art and technology.",
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0A0A0A",
+  themeColor: "#111009",
   colorScheme: "dark",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} h-full`} suppressHydrationWarning>
-      <body className="h-full bg-[#0A0A0A] text-white antialiased">
+    <html
+      lang="en"
+      className={`${inter.variable} ${dmSerifDisplay.variable} ${jetbrainsMono.variable} h-full`}
+      suppressHydrationWarning
+    >
+      <body className="h-full bg-[#111009] text-[#F2EDE6] antialiased">
         <Providers>
           {children}
           <Toaster
             theme="dark"
             toastOptions={{
-              style: { background: "#1A1A1A", border: "1px solid #2A2A2A", color: "#fff" },
+              style: {
+                background: "#1A1712",
+                border: "1px solid #2C271F",
+                color: "#F2EDE6",
+                fontFamily: "var(--font-inter)",
+              },
             }}
           />
         </Providers>

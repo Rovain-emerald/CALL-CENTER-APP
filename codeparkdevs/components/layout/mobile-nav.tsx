@@ -6,35 +6,33 @@ import { cn } from "@/lib/utils";
 import { Home, Sparkles, Bot, Library, Plus } from "lucide-react";
 
 const TABS = [
-  { href: "/", icon: Home, label: "Home" },
-  { href: "/create", icon: Sparkles, label: "Create" },
-  null, // FAB placeholder
-  { href: "/agents", icon: Bot, label: "Agents" },
-  { href: "/library", icon: Library, label: "Library" },
+  { href: "/",        icon: Home,     label: "Home" },
+  { href: "/create",  icon: Sparkles, label: "Create" },
+  null, // FAB
+  { href: "/agents",  icon: Bot,      label: "Agents" },
+  { href: "/library", icon: Library,  label: "Library" },
 ];
 
 export default function MobileNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 h-16 bg-[#0D0D0D] border-t border-[#1E1E1E] flex items-center justify-around px-2">
+    <nav className="md:hidden fixed bottom-0 inset-x-0 z-50 h-16 bg-[#0E0C08] border-t border-[#2C271F] flex items-center justify-around px-2">
       {TABS.map((tab, i) => {
         if (!tab) {
-          // FAB — center glowing Create button
           return (
             <Link
               key="fab"
               href="/create"
               className={cn(
-                "relative -top-4 w-14 h-14 rounded-full bg-[#00FF87] flex items-center justify-center",
-                "shadow-[0_0_24px_rgba(0,255,135,0.5)]",
-                // Emil: animate-pulse for pulse-green effect, but not on hover (reduce motion)
-                "transition-[transform,box-shadow] duration-150 active:scale-[0.95]",
-                "@media (hover: hover) { hover:shadow-[0_0_32px_rgba(0,255,135,0.7)] }"
+                "relative -top-4 w-12 h-12 rounded-full",
+                "bg-[#C8A882] flex items-center justify-center",
+                "shadow-[0_0_24px_rgba(200,168,130,0.4)]",
+                "transition-[transform,box-shadow] duration-150 active:scale-[0.95]"
               )}
               aria-label="Create"
             >
-              <Plus className="w-6 h-6 text-black" strokeWidth={2.5} />
+              <Plus className="w-5 h-5 text-[#111009]" strokeWidth={2.5} />
             </Link>
           );
         }
@@ -49,11 +47,11 @@ export default function MobileNav() {
             className={cn(
               "flex flex-col items-center gap-1 px-3 py-1",
               "transition-[color] duration-150",
-              active ? "text-[#00FF87]" : "text-[#555]"
+              active ? "text-[#C8A882]" : "text-[#6B5E50]"
             )}
           >
-            <Icon className="w-5 h-5" />
-            <span className="text-[10px] font-medium">{label}</span>
+            <Icon style={{ width: 18, height: 18 }} />
+            <span className="text-[10px] font-medium tracking-wide">{label}</span>
           </Link>
         );
       })}
