@@ -1,0 +1,19 @@
+{
+  "buildCommand": "next build",
+  "framework": "nextjs",
+  "regions": ["iad1"],
+  "env": {
+    "NEXT_TELEMETRY_DISABLED": "1"
+  },
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store, no-cache, must-revalidate" }
+      ]
+    }
+  ],
+  "rewrites": [
+    { "source": "/health", "destination": "/api/health" }
+  ]
+}
