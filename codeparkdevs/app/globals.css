@@ -1,0 +1,66 @@
+@import "tailwindcss";
+
+@theme inline {
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-geist-mono);
+}
+
+/* ── Base ──────────────────────────────────────────────────────────────────── */
+:root {
+  color-scheme: dark;
+}
+
+body {
+  background: #0A0A0A;
+  color: #ffffff;
+  font-family: var(--font-inter), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Scrollbar ─────────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #2A2A2A; border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: #3A3A3A; }
+
+/* ── Selection ─────────────────────────────────────────────────────────────── */
+::selection { background: rgba(0, 255, 135, 0.18); color: #fff; }
+
+/* ── Emil: ease-out custom curve for all transitions ──────────────────────── */
+@layer base {
+  *, *::before, *::after {
+    /* Use only for elements that need this; avoid `all` */
+  }
+}
+
+/* ── Utilities ─────────────────────────────────────────────────────────────── */
+@layer utilities {
+  .glow-green  { box-shadow: 0 0 24px rgba(0,255,135,0.35); }
+  .glow-purple { box-shadow: 0 0 24px rgba(124,58,237,0.35); }
+  .glow-pink   { box-shadow: 0 0 24px rgba(236,72,153,0.35); }
+
+  .text-gradient-green {
+    background: linear-gradient(135deg,#00FF87,#00C96D);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .text-gradient-purple {
+    background: linear-gradient(135deg,#7C3AED,#A855F7);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .glass {
+    background: rgba(255,255,255,0.025);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+}
+
+/* ── Animate pulse-green ────────────────────────────────────────────────────── */
+@keyframes pulse-green {
+  0%,100% { box-shadow: 0 0 0 0 rgba(0,255,135,0.4); }
+  50% { box-shadow: 0 0 0 6px rgba(0,255,135,0); }
+}
+.animate-pulse-green { animation: pulse-green 2s ease-in-out infinite; }

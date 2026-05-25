@@ -1,0 +1,397 @@
+// CodeParkDevs — Complete Prisma Schema
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ─────────────────────────────────────────────────────────────────
+
+enum Plan {
+  FREE
+  CREATOR
+  PRO
+  BUSINESS
+}
+
+enum GenerationType {
+  IMAGE
+  VIDEO
+  MUSIC
+  VOICE
+  THREE_D
+}
+
+enum GenerationStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum AgentStatus {
+  ACTIVE
+  PAUSED
+  DRAFT
+  ARCHIVED
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum AuditAction {
+  LOGIN
+  LOGOUT
+  CREATE
+  UPDATE
+  DELETE
+  DOWNLOAD
+  SHARE
+  PAYMENT
+  AGENT_RUN
+  SECURITY_EVENT
+}
+
+// ─── Users ─────────────────────────────────────────────────────────────────
+
+model User {
+  id               String    @id @default(cuid())
+  email            String    @unique
+  emailVerified    DateTime?
+  passwordHash     String?
+  name             String?
+  image            String?
+  plan             Plan      @default(FREE)
+  credits          Int       @default(50)
+  stripeCustomerId String?   @unique
+  mfaEnabled       Boolean   @default(false)
+  mfaSecret        String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  accounts      Account[]
+  sessions      Session[]
+  projects      Project[]
+  generations   Generation[]
+  chats         Chat[]
+  agents        Agent[]
+  approvals     Approval[]
+  automations   Automation[]
+  brandKits     BrandKit[]
+  designs       Design[]
+  subscriptions Subscription[]
+  auditLogs     AuditLog[]
+  refreshTokens RefreshToken[]
+
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("refresh_tokens")
+}
+
+// ─── Projects ──────────────────────────────────────────────────────────────
+
+model Project {
+  id           String   @id @default(cuid())
+  userId       String
+  name         String
+  description  String?
+  systemPrompt String?
+  thumbnail    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  chats       Chat[]
+  generations Generation[]
+  designs     Design[]
+
+  @@index([userId])
+  @@map("projects")
+}
+
+// ─── AI Generations ────────────────────────────────────────────────────────
+
+model Generation {
+  id           String           @id @default(cuid())
+  userId       String
+  projectId    String?
+  type         GenerationType
+  status       GenerationStatus @default(PENDING)
+  prompt       String
+  model        String
+  settings     Json             @default("{}")
+  outputUrl    String?
+  thumbnailUrl String?
+  durationSecs Float?
+  credits      Int              @default(1)
+  error        String?
+  metadata     Json             @default("{}")
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project Project? @relation(fields: [projectId], references: [id])
+
+  @@index([userId, type])
+  @@index([userId, createdAt])
+  @@map("generations")
+}
+
+// ─── Chat ──────────────────────────────────────────────────────────────────
+
+model Chat {
+  id        String   @id @default(cuid())
+  userId    String
+  projectId String?
+  title     String   @default("New Chat")
+  mode      String   @default("chat")
+  pinned    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project  Project?  @relation(fields: [projectId], references: [id])
+  messages Message[]
+
+  @@index([userId])
+  @@map("chats")
+}
+
+model Message {
+  id          String   @id @default(cuid())
+  chatId      String
+  role        String
+  content     String
+  thinking    String?
+  attachments Json     @default("[]")
+  tokens      Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  chat Chat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+
+  @@index([chatId])
+  @@map("messages")
+}
+
+// ─── Agents ────────────────────────────────────────────────────────────────
+
+model Agent {
+  id           String      @id @default(cuid())
+  userId       String
+  name         String
+  description  String?
+  type         String
+  status       AgentStatus @default(DRAFT)
+  systemPrompt String
+  tools        Json        @default("[]")
+  schedule     String?
+  webhookUrl   String?
+  config       Json        @default("{}")
+  totalRuns    Int         @default(0)
+  lastRunAt    DateTime?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  logs      AgentLog[]
+  approvals Approval[]
+
+  @@index([userId])
+  @@map("agents")
+}
+
+model AgentLog {
+  id         String   @id @default(cuid())
+  agentId    String
+  sessionId  String?
+  status     String
+  input      String?
+  output     String?
+  tokensUsed Int      @default(0)
+  duration   Int      @default(0)
+  error      String?
+  metadata   Json     @default("{}")
+  createdAt  DateTime @default(now())
+
+  agent Agent @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@index([agentId])
+  @@map("agent_logs")
+}
+
+model Approval {
+  id         String         @id @default(cuid())
+  userId     String
+  agentId    String?
+  type       String
+  status     ApprovalStatus @default(PENDING)
+  data       Json
+  reason     String?
+  reviewedAt DateTime?
+  createdAt  DateTime       @default(now())
+
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  agent Agent? @relation(fields: [agentId], references: [id])
+
+  @@index([userId, status])
+  @@map("approvals")
+}
+
+// ─── Content Automation ────────────────────────────────────────────────────
+
+model Automation {
+  id        String    @id @default(cuid())
+  userId    String
+  name      String
+  type      String
+  platforms Json      @default("[]")
+  schedule  String?
+  content   Json      @default("{}")
+  active    Boolean   @default(false)
+  lastRunAt DateTime?
+  nextRunAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("automations")
+}
+
+// ─── Design Studio ─────────────────────────────────────────────────────────
+
+model BrandKit {
+  id         String   @id @default(cuid())
+  userId     String
+  name       String
+  colors     Json     @default("[]")
+  fonts      Json     @default("{}")
+  logoUrl    String?
+  guidelines String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  designs Design[]
+
+  @@map("brand_kits")
+}
+
+model Design {
+  id           String   @id @default(cuid())
+  userId       String
+  projectId    String?
+  brandKitId   String?
+  name         String
+  type         String
+  canvasData   Json     @default("{}")
+  thumbnailUrl String?
+  width        Int      @default(1080)
+  height       Int      @default(1080)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project  Project?  @relation(fields: [projectId], references: [id])
+  brandKit BrandKit? @relation(fields: [brandKitId], references: [id])
+
+  @@index([userId])
+  @@map("designs")
+}
+
+// ─── Billing ───────────────────────────────────────────────────────────────
+
+model Subscription {
+  id                   String   @id @default(cuid())
+  userId               String
+  stripeSubscriptionId String   @unique
+  stripePriceId        String
+  plan                 Plan
+  status               String
+  currentPeriodStart   DateTime
+  currentPeriodEnd     DateTime
+  cancelAtPeriodEnd    Boolean  @default(false)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("subscriptions")
+}
+
+// ─── Security ──────────────────────────────────────────────────────────────
+
+model AuditLog {
+  id         String      @id @default(cuid())
+  userId     String?
+  action     AuditAction
+  resource   String?
+  resourceId String?
+  ipAddress  String?
+  userAgent  String?
+  metadata   Json        @default("{}")
+  createdAt  DateTime    @default(now())
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
