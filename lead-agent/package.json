@@ -1,0 +1,30 @@
+{
+  "name": "lead-research-agent",
+  "version": "1.0.0",
+  "description": "AI-powered 24/7 lead research agent that finds businesses without websites needing automation",
+  "scripts": {
+    "start": "tsx src/index.ts",
+    "dev": "tsx watch src/index.ts",
+    "cycle": "tsx src/index.ts --cycle",
+    "report": "tsx src/index.ts --report",
+    "leads": "tsx src/index.ts --leads",
+    "status": "tsx src/index.ts --status",
+    "build": "tsc",
+    "start:prod": "node dist/index.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.97.1",
+    "axios": "^1.7.2",
+    "better-sqlite3": "^11.7.0",
+    "dotenv": "^16.4.5",
+    "node-cron": "^3.0.3",
+    "winston": "^3.14.2"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.12",
+    "@types/node": "^22.10.0",
+    "@types/node-cron": "^3.0.11",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}
