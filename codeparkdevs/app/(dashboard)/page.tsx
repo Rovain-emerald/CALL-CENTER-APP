@@ -1,10 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useUser } from "@clerk/nextjs";
+import { toast } from "sonner";
 import {
   MessageSquare, Sparkles, Music, Palette, Code2, Bot,
-  Play, Zap, ChevronRight, CheckCircle2, ArrowUpRight,
+  Play, Zap, ChevronRight, CheckCircle2, ArrowUpRight, AlertTriangle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -20,12 +23,12 @@ const QUICK_ACTIONS = [
 const MODES = ["All", "Image", "Video", "Music", "Design"];
 
 const RECENT = [
-  { id: 1, title: "Product Launch Video",   type: "VIDEO",  date: "2h ago",  colors: "from-[#B5704F]/60 to-[#C8A882]/30" },
-  { id: 2, title: "Brand Identity Pack",    type: "DESIGN", date: "5h ago",  colors: "from-[#8A9E8C]/60 to-[#C8A882]/25" },
-  { id: 3, title: "Sunset Café Campaign",   type: "IMAGE",  date: "Yesterday",colors: "from-[#C8A882]/50 to-[#B5704F]/30" },
-  { id: 4, title: "Lead Research Agent",    type: "AGENT",  date: "Yesterday",colors: "from-[#B5704F]/40 to-[#8A9E8C]/30" },
-  { id: 5, title: "API Server Boilerplate", type: "CODE",   date: "2d ago",  colors: "from-[#1A1712] to-[#221E18]" },
-  { id: 6, title: "Ambient Soundscape",     type: "MUSIC",  date: "3d ago",  colors: "from-[#8A9E8C]/40 to-[#C8A882]/20" },
+  { id: 1, title: "Product Launch Video",   type: "VIDEO",  date: "2h ago",    colors: "from-[#B5704F]/60 to-[#C8A882]/30" },
+  { id: 2, title: "Brand Identity Pack",    type: "DESIGN", date: "5h ago",    colors: "from-[#8A9E8C]/60 to-[#C8A882]/25" },
+  { id: 3, title: "Sunset Café Campaign",   type: "IMAGE",  date: "Yesterday", colors: "from-[#C8A882]/50 to-[#B5704F]/30" },
+  { id: 4, title: "Lead Research Agent",    type: "AGENT",  date: "Yesterday", colors: "from-[#B5704F]/40 to-[#8A9E8C]/30" },
+  { id: 5, title: "API Server Boilerplate", type: "CODE",   date: "2d ago",    colors: "from-[#1A1712] to-[#221E18]" },
+  { id: 6, title: "Ambient Soundscape",     type: "MUSIC",  date: "3d ago",    colors: "from-[#8A9E8C]/40 to-[#C8A882]/20" },
 ];
 
 const TYPE_COLORS: Record<string, string> = {
@@ -33,10 +36,12 @@ const TYPE_COLORS: Record<string, string> = {
   AGENT:  "#B5704F", CODE:   "#A89880", MUSIC: "#8A9E8C",
 };
 
-const AGENTS = [
-  { name: "Customer Service Bot", lastRun: "2 min ago",  runs: "1,234", success: 98 },
-  { name: "Lead Research Agent",  lastRun: "4h ago",     runs: "456",   success: 94 },
+const AGENTS_MOCK = [
+  { name: "Customer Service Bot", lastRun: "2 min ago", runs: "1,234", success: 98 },
+  { name: "Lead Research Agent",  lastRun: "4h ago",    runs: "456",   success: 94 },
 ];
+
+const LOW_CREDITS_THRESHOLD = 20;
 
 function getGreeting() {
   const h = new Date().getHours();
@@ -46,8 +51,34 @@ function getGreeting() {
 }
 
 export default function HomePage() {
+  const { user } = useUser();
+  const router = useRouter();
   const [prompt, setPrompt] = useState("");
   const [mode, setMode] = useState("All");
+  const [credits, setCredits] = useState<number | null>(null);
+  const [creditsLoading, setCreditsLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/user/credits")
+      .then((r) => r.json())
+      .then((d) => {
+        setCredits(d.data?.credits ?? d.credits ?? 0);
+      })
+      .catch(() => {
+        toast.error("Failed to load credits");
+        setCredits(0);
+      })
+      .finally(() => setCreditsLoading(false));
+  }, []);
+
+  function handleGenerate() {
+    if (!prompt.trim()) return;
+    const params = new URLSearchParams({ prompt: prompt.trim() });
+    if (mode !== "All") params.set("mode", mode.toLowerCase());
+    router.push(`/create?${params.toString()}`);
+  }
+
+  const lowCredits = credits !== null && credits < LOW_CREDITS_THRESHOLD;
 
   return (
     <div className="flex flex-col min-h-full">
@@ -58,11 +89,11 @@ export default function HomePage() {
           <span className="artisan-label">[ artisan_build: v1.2 ]</span>
         </div>
         <div className="w-7 h-7 rounded-full border border-[#C8A882]/30 bg-[#221E18] flex items-center justify-center text-[11px] font-medium text-[#C8A882] cursor-pointer hover:border-[#C8A882]/60 transition-[border-color] duration-150">
-          A
+          {user?.firstName?.[0]?.toUpperCase() ?? "A"}
         </div>
       </header>
 
-      <div className="flex-1 max-w-[820px] mx-auto w-full px-6 py-8 space-y-9">
+      <div className={cn("flex-1 max-w-[820px] mx-auto w-full px-6 py-8 space-y-9", lowCredits && "pb-20")}>
 
         {/* ── Greeting ─────────────────────────────────────────────── */}
         <div className="animate-fade-up">
@@ -70,7 +101,7 @@ export default function HomePage() {
             className="text-[32px] font-normal text-[#F2EDE6] leading-tight"
             style={{ fontFamily: "var(--font-dm-serif)", letterSpacing: "-0.02em" }}
           >
-            {getGreeting()}.
+            {getGreeting()}, {user?.firstName ?? "friend"}.
           </h2>
           <p className="text-[13px] text-[#6B5E50] mt-1 tracking-wide">
             What will you craft today?
@@ -104,10 +135,12 @@ export default function HomePage() {
           <textarea
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleGenerate();
+            }}
             placeholder="Describe what you want to create…"
             rows={3}
             className="w-full bg-transparent text-[#F2EDE6] placeholder:text-[#6B5E50]/60 text-[14px] resize-none focus:outline-none leading-relaxed"
-            style={{ fontFamily: "var(--font-inter)" }}
           />
           <div className="flex items-center justify-between pt-1 border-t border-[#2C271F]">
             {/* Mode pills */}
@@ -129,13 +162,14 @@ export default function HomePage() {
               ))}
             </div>
             <button
-              disabled={!prompt}
+              onClick={handleGenerate}
+              disabled={!prompt.trim()}
               className={cn(
                 "flex items-center gap-2 h-8 px-5 rounded-[8px] text-[12px] font-semibold",
                 "bg-[#C8A882] text-[#111009]",
                 "hover:bg-[#BFA070] hover:shadow-[0_0_16px_rgba(200,168,130,0.3)]",
                 "transition-[background-color,box-shadow,transform] duration-150 active:scale-[0.97]",
-                !prompt && "opacity-40 pointer-events-none"
+                !prompt.trim() && "opacity-40 pointer-events-none"
               )}
             >
               <Zap style={{ width: 12, height: 12 }} />
@@ -147,14 +181,38 @@ export default function HomePage() {
         {/* ── Stats row ────────────────────────────────────────────── */}
         <div className="grid grid-cols-3 gap-3 animate-fade-up" style={{ animationDelay: "120ms" }}>
           {[
-            { label: "Total Creations", value: "1,284", mono: "const created" },
+            { label: "Total Creations", value: "1,284",  mono: "const created" },
             { label: "Active Agents",   value: "2 / 3",  mono: "agents.running" },
-            { label: "Credits Left",    value: "240",    mono: "credits.balance" },
-          ].map(({ label, value, mono }) => (
-            <div key={label} className="bg-[#1A1712] border border-[#2C271F] rounded-[12px] p-4">
-              <p className="font-mono text-[10px] text-[#6B5E50] tracking-wide mb-3">{mono}</p>
+            {
+              label: "Credits Left",
+              value: creditsLoading
+                ? "—"
+                : credits !== null
+                  ? credits.toLocaleString()
+                  : "—",
+              mono: "credits.balance",
+              highlight: lowCredits,
+            },
+          ].map(({ label, value, mono, highlight }) => (
+            <div
+              key={label}
+              className={cn(
+                "bg-[#1A1712] border rounded-[12px] p-4 transition-[border-color] duration-150",
+                highlight ? "border-[#B5704F]/40" : "border-[#2C271F]"
+              )}
+            >
               <p
-                className="text-[28px] text-[#F2EDE6] leading-none"
+                className="font-mono text-[10px] tracking-wide mb-3"
+                style={{ fontFamily: "var(--font-jetbrains-mono)", color: "#6B5E50" }}
+              >
+                {mono}
+              </p>
+              <p
+                className={cn(
+                  "text-[28px] leading-none",
+                  highlight ? "text-[#B5704F]" : "text-[#F2EDE6]",
+                  creditsLoading && label === "Credits Left" && "animate-pulse"
+                )}
                 style={{ fontFamily: "var(--font-dm-serif)", letterSpacing: "-0.02em" }}
               >
                 {value}
@@ -229,11 +287,11 @@ export default function HomePage() {
               href="/agents"
               className="flex items-center gap-1 text-[12px] text-[#6B5E50] hover:text-[#C8A882] transition-colors duration-150"
             >
-              Manage <ChevronRight style={{ width: 12, height: 12 }} />
+              Manage Agents <ChevronRight style={{ width: 12, height: 12 }} />
             </Link>
           </div>
           <div className="space-y-2">
-            {AGENTS.map((agent) => (
+            {AGENTS_MOCK.map((agent) => (
               <div
                 key={agent.name}
                 className="flex items-center justify-between bg-[#1A1712] border border-[#2C271F] rounded-[10px] px-4 py-3 hover:border-[#3A3328] transition-[border-color] duration-150"
@@ -245,13 +303,23 @@ export default function HomePage() {
                   </div>
                   <div>
                     <p className="text-[13px] font-medium text-[#F2EDE6]">{agent.name}</p>
-                    <p className="font-mono text-[10px] text-[#6B5E50]">last_run: {agent.lastRun}</p>
+                    <p
+                      className="text-[10px] text-[#6B5E50]"
+                      style={{ fontFamily: "var(--font-jetbrains-mono)" }}
+                    >
+                      last_run: {agent.lastRun}
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
                   <div className="text-right">
                     <p className="text-[12px] text-[#A89880]">{agent.runs} runs</p>
-                    <p className="font-mono text-[11px] text-[#8A9E8C]">{agent.success}% success</p>
+                    <p
+                      className="text-[11px] text-[#8A9E8C]"
+                      style={{ fontFamily: "var(--font-jetbrains-mono)" }}
+                    >
+                      {agent.success}% success
+                    </p>
                   </div>
                   <CheckCircle2 style={{ width: 14, height: 14 }} className="text-[#8A9E8C]" />
                 </div>
@@ -261,12 +329,45 @@ export default function HomePage() {
 
           {/* Footer artisan mark */}
           <div className="mt-8 pt-6 border-t border-[#2C271F] flex items-center justify-between">
-            <span className="font-mono text-[10px] text-[#6B5E50]">Codeparkdevs · 2025 · All rights reserved</span>
-            <span className="font-mono text-[10px] text-[#6B5E50]">[ status: crafted ]</span>
+            <span
+              className="text-[10px] text-[#6B5E50]"
+              style={{ fontFamily: "var(--font-jetbrains-mono)" }}
+            >
+              Codeparkdevs · 2025 · All rights reserved
+            </span>
+            <span
+              className="text-[10px] text-[#6B5E50]"
+              style={{ fontFamily: "var(--font-jetbrains-mono)" }}
+            >
+              [ status: crafted ]
+            </span>
           </div>
         </section>
 
       </div>
+
+      {/* ── Low credits warning bar ──────────────────────────────────── */}
+      {lowCredits && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-between gap-4 px-6 py-3 bg-[#1A1712] border-t border-[#B5704F]/30 shadow-[0_-4px_24px_rgba(181,112,79,0.12)]">
+          <div className="flex items-center gap-2.5">
+            <AlertTriangle style={{ width: 14, height: 14 }} className="text-[#B5704F] shrink-0" />
+            <p className="text-[13px] text-[#F2EDE6]">
+              You have{" "}
+              <span className="font-semibold text-[#B5704F]">
+                {credits} credit{credits === 1 ? "" : "s"}
+              </span>{" "}
+              remaining. Top up to keep creating.
+            </p>
+          </div>
+          <Link
+            href="/settings?tab=billing"
+            className="shrink-0 flex items-center gap-1.5 h-8 px-4 rounded-[8px] text-[12px] font-semibold bg-[#B5704F] text-[#F2EDE6] hover:bg-[#A3603E] transition-[background-color,transform] duration-150 active:scale-[0.97]"
+          >
+            <Zap style={{ width: 11, height: 11 }} />
+            Get More Credits
+          </Link>
+        </div>
+      )}
     </div>
   );
 }

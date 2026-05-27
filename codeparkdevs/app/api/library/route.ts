@@ -25,7 +25,7 @@ const createSchema = z.object({
   type: z.enum(VALID_TYPES),
   file_url: z.string().url(),
   tags: z.array(z.string().max(50)).max(10).optional().default([]),
-  metadata: z.record(z.unknown()).optional().default({}),
+  metadata: z.record(z.string(), z.unknown()).optional().default({}),
 });
 
 export async function GET(req: NextRequest) {

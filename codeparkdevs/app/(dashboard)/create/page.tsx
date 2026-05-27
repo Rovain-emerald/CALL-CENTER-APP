@@ -1,569 +1,366 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
+import { useState, useRef } from "react";
+import { toast } from "sonner";
 import {
-  ChevronDown,
-  ChevronUp,
-  Upload,
-  Play,
-  Zap,
-  Image as ImageIcon,
-  Music,
-  Mic,
-  Box,
-  Video,
-  Check,
-  Loader2,
-  Sparkles,
-} from 'lucide-react'
+  Sparkles, Download, Copy, RefreshCw, ImageIcon,
+  FileText, Loader2, Zap, CheckCircle2,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import Image from "next/image";
 
-const MAIN_TABS = [
-  { id: 'video', label: 'VIDEO', icon: Video },
-  { id: 'image', label: 'IMAGE', icon: ImageIcon },
-  { id: 'music', label: 'MUSIC', icon: Music },
-  { id: 'voice', label: 'VOICE', icon: Mic },
-  { id: '3d', label: '3D', icon: Box },
-]
+const MODELS = [
+  { id: "flux-pro",  label: "FLUX Pro",  desc: "Photorealistic · Best quality",  credits: 5 },
+  { id: "flux-dev",  label: "FLUX Dev",  desc: "Fast · Good quality",             credits: 3 },
+  { id: "sdxl",      label: "SDXL",      desc: "Artistic · Creative",             credits: 4 },
+];
 
-const VIDEO_MODELS = [
-  { id: 'luma', name: 'Luma Dream Machine', tag: 'Popular', color: '#7C3AED' },
-  { id: 'seedance', name: 'Seedance 2.0', tag: 'New', color: '#00FF87' },
-  { id: 'kling', name: 'Kling 3.0', tag: 'Fast', color: '#EC4899' },
-  { id: 'veo', name: 'Google Veo 3.1', tag: 'HD', color: '#00FF87' },
-  { id: 'sora', name: 'Sora 2', tag: 'Premium', color: '#7C3AED' },
-  { id: 'wan', name: 'WAN 2.6', tag: 'Open', color: '#AAAAAA' },
-  { id: 'minimax', name: 'MiniMax Hailuo 02', tag: 'Budget', color: '#EC4899' },
-]
+const RATIOS  = ["1:1", "16:9", "9:16", "4:3"];
+const TYPES   = ["Blog Post", "Social Caption", "Ad Copy", "Script", "Email"] as const;
+const TONES   = ["Professional", "Casual", "Funny", "Formal"] as const;
 
-const IMAGE_MODELS = [
-  { id: 'flux-pro', name: 'FLUX Pro 1.1', tag: 'Best' },
-  { id: 'ideogram', name: 'Ideogram 3.0', tag: 'Text' },
-  { id: 'midjourney', name: 'Midjourney 7', tag: 'Art' },
-  { id: 'stable-ultra', name: 'SDXL Ultra', tag: 'Fast' },
-  { id: 'dalle3', name: 'DALL·E 3', tag: 'OpenAI' },
-  { id: 'recraft', name: 'Recraft V3', tag: 'Design' },
-  { id: 'playground', name: 'Playground v3', tag: 'Free' },
-  { id: 'leonardo', name: 'Leonardo Phoenix', tag: 'Photo' },
-]
-
-const MOCK_VIDEO_RESULTS = [
-  { id: '1', gradient: 'from-[#7C3AED] to-[#EC4899]', title: 'Cinematic drone shot, urban city', duration: '5s' },
-  { id: '2', gradient: 'from-[#00FF87] to-[#7C3AED]', title: 'Neon lights in rain, close-up', duration: '5s' },
-  { id: '3', gradient: 'from-[#EC4899] to-[#0A0A0A]', title: 'Abstract particles flowing', duration: '5s' },
-]
-
-const IMAGE_RESULTS = [
-  { id: '1', gradient: 'from-[#7C3AED] to-[#00FF87]', title: 'Cyberpunk cityscape, night' },
-  { id: '2', gradient: 'from-[#EC4899] to-[#7C3AED]', title: 'Minimal product shot, white' },
-  { id: '3', gradient: 'from-[#00FF87] to-[#EC4899]', title: 'Portrait with neon lights' },
-  { id: '4', gradient: 'from-[#0A0A0A] to-[#7C3AED]', title: 'Abstract digital art wave' },
-]
-
-const STYLE_OPTIONS = ['Cinematic', 'UGC', 'Viral', 'Dreamlike', 'Documentary']
-const CAMERA_OPTIONS = ['Pan', 'Tilt', 'Zoom', 'Dolly', 'Orbit', 'Static']
-const IMAGE_STYLES = ['Photorealistic', 'Illustration', 'Anime', 'Oil Paint', '3D Render', 'Sketch']
-const RESOLUTION_OPTIONS = ['512×512', '768×768', '1024×1024', '1024×1792', '1792×1024']
-
-function FrameUploadZone({ label }: { label: string }) {
-  return (
-    <div className="border-2 border-dashed border-[#2A2A2A] rounded-xl p-4 flex flex-col items-center justify-center gap-2 hover:border-[#00FF87]/40 transition-colors cursor-pointer group min-h-[100px]">
-      <div className="w-8 h-8 rounded-lg bg-[#1A1A1A] flex items-center justify-center group-hover:bg-[#00FF87]/10 transition-colors">
-        <Upload className="w-4 h-4 text-[#555555] group-hover:text-[#00FF87]" />
-      </div>
-      <p className="text-xs text-[#555555] text-center leading-tight">{label}</p>
-    </div>
-  )
-}
-
-function VideoTab() {
-  const [prompt, setPrompt] = useState('')
-  const [selectedModel, setSelectedModel] = useState('luma')
-  const [settingsOpen, setSettingsOpen] = useState(true)
-  const [duration, setDuration] = useState('5s')
-  const [aspect, setAspect] = useState('16:9')
-  const [style, setStyle] = useState('Cinematic')
-  const [camera, setCamera] = useState('Pan')
-  const [motion, setMotion] = useState(5)
-  const [fps, setFps] = useState('24')
-  const [generating, setGenerating] = useState(false)
-  const [hasResults, setHasResults] = useState(true)
-
-  function handleGenerate() {
-    setGenerating(true)
-    setTimeout(() => {
-      setGenerating(false)
-      setHasResults(true)
-    }, 3000)
-  }
-
-  return (
-    <div className="flex gap-6 h-full">
-      {/* Left Controls */}
-      <div className="w-80 flex-shrink-0 flex flex-col gap-4 overflow-y-auto pr-1 scrollbar-hide">
-        {/* Prompt */}
-        <div className="space-y-2">
-          <label className="text-xs font-semibold text-[#AAAAAA] uppercase tracking-wider">Prompt</label>
-          <textarea
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-            placeholder="Describe your video... A cinematic drone shot of a neon-lit city at night, rain reflecting lights on wet streets..."
-            rows={4}
-            className="w-full bg-[#111111] border border-[#2A2A2A] rounded-xl px-4 py-3 text-sm text-white placeholder-[#444444] outline-none resize-none focus:border-[#00FF87]/40 transition-colors leading-relaxed"
-          />
-        </div>
-
-        {/* Model Selector */}
-        <div className="space-y-2">
-          <label className="text-xs font-semibold text-[#AAAAAA] uppercase tracking-wider">Model</label>
-          <div className="space-y-1.5">
-            {VIDEO_MODELS.map((model) => (
-              <button
-                key={model.id}
-                onClick={() => setSelectedModel(model.id)}
-                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg border text-sm transition-all ${
-                  selectedModel === model.id
-                    ? 'border-[#00FF87]/40 bg-[#00FF87]/5 text-white'
-                    : 'border-[#2A2A2A] bg-[#111111] text-[#AAAAAA] hover:border-[#2A2A2A] hover:text-white'
-                }`}
-              >
-                <span>{model.name}</span>
-                <div className="flex items-center gap-2">
-                  <span
-                    className="text-xs px-1.5 py-0.5 rounded"
-                    style={{ color: model.color, backgroundColor: `${model.color}15` }}
-                  >
-                    {model.tag}
-                  </span>
-                  {selectedModel === model.id && (
-                    <Check className="w-3.5 h-3.5 text-[#00FF87]" />
-                  )}
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Settings Collapsible */}
-        <div className="bg-[#111111] border border-[#2A2A2A] rounded-xl overflow-hidden">
-          <button
-            onClick={() => setSettingsOpen(!settingsOpen)}
-            className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-white hover:bg-[#1A1A1A] transition-colors"
-          >
-            <span>Settings</span>
-            {settingsOpen ? <ChevronUp className="w-4 h-4 text-[#AAAAAA]" /> : <ChevronDown className="w-4 h-4 text-[#AAAAAA]" />}
-          </button>
-          {settingsOpen && (
-            <div className="px-4 pb-4 space-y-4 border-t border-[#2A2A2A] pt-4">
-              {/* Duration */}
-              <div className="space-y-2">
-                <label className="text-xs text-[#AAAAAA]">Duration</label>
-                <div className="flex gap-2">
-                  {['3s', '5s', '10s', '30s'].map((d) => (
-                    <button
-                      key={d}
-                      onClick={() => setDuration(d)}
-                      className={`flex-1 py-1.5 rounded-lg text-xs font-medium border transition-all ${
-                        duration === d
-                          ? 'bg-[#00FF87]/10 border-[#00FF87]/40 text-[#00FF87]'
-                          : 'border-[#2A2A2A] text-[#AAAAAA] hover:text-white'
-                      }`}
-                    >
-                      {d}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Aspect Ratio */}
-              <div className="space-y-2">
-                <label className="text-xs text-[#AAAAAA]">Aspect Ratio</label>
-                <div className="flex gap-2">
-                  {['9:16', '16:9', '1:1', '4:3'].map((a) => (
-                    <button
-                      key={a}
-                      onClick={() => setAspect(a)}
-                      className={`flex-1 py-1.5 rounded-lg text-xs font-medium border transition-all ${
-                        aspect === a
-                          ? 'bg-[#00FF87]/10 border-[#00FF87]/40 text-[#00FF87]'
-                          : 'border-[#2A2A2A] text-[#AAAAAA] hover:text-white'
-                      }`}
-                    >
-                      {a}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Style */}
-              <div className="space-y-2">
-                <label className="text-xs text-[#AAAAAA]">Style</label>
-                <select
-                  value={style}
-                  onChange={(e) => setStyle(e.target.value)}
-                  className="w-full bg-[#0A0A0A] border border-[#2A2A2A] rounded-lg px-3 py-2 text-sm text-white outline-none"
-                >
-                  {STYLE_OPTIONS.map((s) => <option key={s}>{s}</option>)}
-                </select>
-              </div>
-
-              {/* Camera */}
-              <div className="space-y-2">
-                <label className="text-xs text-[#AAAAAA]">Camera Movement</label>
-                <select
-                  value={camera}
-                  onChange={(e) => setCamera(e.target.value)}
-                  className="w-full bg-[#0A0A0A] border border-[#2A2A2A] rounded-lg px-3 py-2 text-sm text-white outline-none"
-                >
-                  {CAMERA_OPTIONS.map((c) => <option key={c}>{c}</option>)}
-                </select>
-              </div>
-
-              {/* Motion */}
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <label className="text-xs text-[#AAAAAA]">Motion Intensity</label>
-                  <span className="text-xs text-[#00FF87]">{motion}/10</span>
-                </div>
-                <input
-                  type="range"
-                  min={1}
-                  max={10}
-                  value={motion}
-                  onChange={(e) => setMotion(Number(e.target.value))}
-                  className="w-full accent-[#00FF87]"
-                />
-              </div>
-
-              {/* FPS */}
-              <div className="space-y-2">
-                <label className="text-xs text-[#AAAAAA]">FPS</label>
-                <div className="flex gap-2">
-                  {['24', '30', '60'].map((f) => (
-                    <button
-                      key={f}
-                      onClick={() => setFps(f)}
-                      className={`flex-1 py-1.5 rounded-lg text-xs font-medium border transition-all ${
-                        fps === f
-                          ? 'bg-[#00FF87]/10 border-[#00FF87]/40 text-[#00FF87]'
-                          : 'border-[#2A2A2A] text-[#AAAAAA] hover:text-white'
-                      }`}
-                    >
-                      {f}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Reference Images */}
-        <div className="space-y-2">
-          <label className="text-xs font-semibold text-[#AAAAAA] uppercase tracking-wider">Reference Images</label>
-          <div className="grid grid-cols-2 gap-2">
-            <FrameUploadZone label="First Frame" />
-            <FrameUploadZone label="Last Frame" />
-            <FrameUploadZone label="Style Ref" />
-            <FrameUploadZone label="Character" />
-          </div>
-        </div>
-
-        {/* Generate Button */}
-        <button
-          onClick={handleGenerate}
-          disabled={generating}
-          className="w-full flex items-center justify-center gap-3 py-4 rounded-xl font-semibold text-black bg-[#00FF87] hover:shadow-[0_0_30px_rgba(0,255,135,0.5)] disabled:opacity-60 transition-all duration-300 text-sm"
-          style={{ boxShadow: generating ? 'none' : '0 0 20px rgba(0,255,135,0.3)' }}
-        >
-          {generating ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin" />
-              Generating...
-            </>
-          ) : (
-            <>
-              <Zap className="w-4 h-4" />
-              Generate Video
-              <span className="ml-auto bg-black/20 px-2 py-0.5 rounded-full text-xs">2 credits</span>
-            </>
-          )}
-        </button>
-      </div>
-
-      {/* Right Results */}
-      <div className="flex-1 space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-[#AAAAAA] uppercase tracking-wider">Results</h3>
-          {hasResults && (
-            <span className="text-xs text-[#555555]">{MOCK_VIDEO_RESULTS.length} videos generated</span>
-          )}
-        </div>
-
-        {hasResults ? (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            {MOCK_VIDEO_RESULTS.map((result) => (
-              <div
-                key={result.id}
-                className="relative rounded-xl overflow-hidden border border-[#2A2A2A] group cursor-pointer"
-              >
-                <div
-                  className={`h-48 bg-gradient-to-br ${result.gradient} flex items-center justify-center`}
-                >
-                  <button className="w-14 h-14 rounded-full bg-black/60 border border-white/20 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <Play className="w-6 h-6 text-white ml-1" />
-                  </button>
-                </div>
-                <div className="p-3 bg-[#111111]">
-                  <p className="text-xs text-[#AAAAAA] truncate">{result.title}</p>
-                  <div className="flex items-center justify-between mt-1.5">
-                    <span className="text-xs text-[#555555]">{result.duration} · 16:9</span>
-                    <span className="text-xs text-[#00FF87]">1080p</span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="h-64 flex flex-col items-center justify-center gap-3 border border-dashed border-[#2A2A2A] rounded-xl text-[#444444]">
-            <Video className="w-10 h-10" />
-            <p className="text-sm">Your generated videos will appear here</p>
-          </div>
-        )}
-      </div>
-    </div>
-  )
-}
-
-function ImageTab() {
-  const [prompt, setPrompt] = useState('')
-  const [styleEnhancer, setStyleEnhancer] = useState(true)
-  const [selectedModels, setSelectedModels] = useState<string[]>(['flux-pro', 'ideogram'])
-  const [resolution, setResolution] = useState('1024×1024')
-  const [batchSize, setBatchSize] = useState(2)
-  const [selectedStyle, setSelectedStyle] = useState('Photorealistic')
-  const [generating, setGenerating] = useState(false)
-
-  function toggleModel(id: string) {
-    setSelectedModels((prev) =>
-      prev.includes(id) ? prev.filter((m) => m !== id) : [...prev, id]
-    )
-  }
-
-  return (
-    <div className="flex gap-6 h-full">
-      {/* Left Controls */}
-      <div className="w-80 flex-shrink-0 flex flex-col gap-4 overflow-y-auto pr-1 scrollbar-hide">
-        {/* Prompt */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <label className="text-xs font-semibold text-[#AAAAAA] uppercase tracking-wider">Prompt</label>
-            <button
-              onClick={() => setStyleEnhancer(!styleEnhancer)}
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs border transition-all ${
-                styleEnhancer
-                  ? 'bg-[#7C3AED]/10 border-[#7C3AED]/40 text-[#7C3AED]'
-                  : 'border-[#2A2A2A] text-[#AAAAAA]'
-              }`}
-            >
-              <Sparkles className="w-3 h-3" />
-              Style Enhancer
-            </button>
-          </div>
-          <textarea
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-            placeholder="Describe your image... A hyper-realistic portrait of a cyberpunk warrior with glowing neon tattoos..."
-            rows={4}
-            className="w-full bg-[#111111] border border-[#2A2A2A] rounded-xl px-4 py-3 text-sm text-white placeholder-[#444444] outline-none resize-none focus:border-[#7C3AED]/40 transition-colors leading-relaxed"
-          />
-        </div>
-
-        {/* Model Grid */}
-        <div className="space-y-2">
-          <label className="text-xs font-semibold text-[#AAAAAA] uppercase tracking-wider">Models ({selectedModels.length} selected)</label>
-          <div className="grid grid-cols-2 gap-2">
-            {IMAGE_MODELS.map((model) => {
-              const isSelected = selectedModels.includes(model.id)
-              return (
-                <button
-                  key={model.id}
-                  onClick={() => toggleModel(model.id)}
-                  className={`relative p-3 rounded-xl border text-left transition-all ${
-                    isSelected
-                      ? 'border-[#7C3AED]/50 bg-[#7C3AED]/10'
-                      : 'border-[#2A2A2A] bg-[#111111] hover:border-[#2A2A2A] hover:bg-[#1A1A1A]'
-                  }`}
-                >
-                  {isSelected && (
-                    <div className="absolute top-2 right-2 w-4 h-4 rounded-full bg-[#7C3AED] flex items-center justify-center">
-                      <Check className="w-2.5 h-2.5 text-white" />
-                    </div>
-                  )}
-                  <p className="text-xs font-medium text-white leading-tight pr-4">{model.name}</p>
-                  <p className="text-xs text-[#555555] mt-0.5">{model.tag}</p>
-                </button>
-              )
-            })}
-          </div>
-        </div>
-
-        {/* Resolution */}
-        <div className="space-y-2">
-          <label className="text-xs font-semibold text-[#AAAAAA] uppercase tracking-wider">Resolution</label>
-          <div className="flex flex-wrap gap-2">
-            {RESOLUTION_OPTIONS.map((r) => (
-              <button
-                key={r}
-                onClick={() => setResolution(r)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
-                  resolution === r
-                    ? 'bg-[#7C3AED]/10 border-[#7C3AED]/40 text-[#7C3AED]'
-                    : 'border-[#2A2A2A] text-[#AAAAAA] hover:text-white'
-                }`}
-              >
-                {r}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Batch Size */}
-        <div className="space-y-2">
-          <label className="text-xs font-semibold text-[#AAAAAA] uppercase tracking-wider">Batch Size</label>
-          <div className="flex gap-2">
-            {[1, 2, 4].map((b) => (
-              <button
-                key={b}
-                onClick={() => setBatchSize(b)}
-                className={`flex-1 py-2 rounded-lg text-sm font-semibold border transition-all ${
-                  batchSize === b
-                    ? 'bg-[#7C3AED]/10 border-[#7C3AED]/40 text-[#7C3AED]'
-                    : 'border-[#2A2A2A] text-[#AAAAAA] hover:text-white'
-                }`}
-              >
-                {b}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Style Pills */}
-        <div className="space-y-2">
-          <label className="text-xs font-semibold text-[#AAAAAA] uppercase tracking-wider">Style</label>
-          <div className="flex flex-wrap gap-2">
-            {IMAGE_STYLES.map((s) => (
-              <button
-                key={s}
-                onClick={() => setSelectedStyle(s)}
-                className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
-                  selectedStyle === s
-                    ? 'bg-[#7C3AED]/10 border-[#7C3AED]/40 text-[#7C3AED]'
-                    : 'border-[#2A2A2A] text-[#AAAAAA] hover:text-white'
-                }`}
-              >
-                {s}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <button
-          onClick={() => {
-            setGenerating(true)
-            setTimeout(() => setGenerating(false), 2500)
-          }}
-          disabled={generating}
-          className="w-full flex items-center justify-center gap-3 py-4 rounded-xl font-semibold text-white bg-[#7C3AED] hover:shadow-[0_0_30px_rgba(124,58,237,0.5)] disabled:opacity-60 transition-all duration-300 text-sm"
-        >
-          {generating ? (
-            <><Loader2 className="w-4 h-4 animate-spin" /> Generating...</>
-          ) : (
-            <><Sparkles className="w-4 h-4" /> Generate Images<span className="ml-auto bg-black/20 px-2 py-0.5 rounded-full text-xs">1 credit</span></>
-          )}
-        </button>
-      </div>
-
-      {/* Right Results */}
-      <div className="flex-1 space-y-4">
-        <h3 className="text-sm font-semibold text-[#AAAAAA] uppercase tracking-wider">Results</h3>
-        <div className="grid grid-cols-2 gap-4">
-          {IMAGE_RESULTS.map((result) => (
-            <div key={result.id} className="group relative rounded-xl overflow-hidden border border-[#2A2A2A] cursor-pointer">
-              <div className={`h-56 bg-gradient-to-br ${result.gradient}`} />
-              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center">
-                <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
-                  <button className="px-3 py-1.5 bg-white text-black text-xs rounded-lg font-medium">Download</button>
-                  <button className="px-3 py-1.5 bg-[#00FF87] text-black text-xs rounded-lg font-medium">Edit</button>
-                </div>
-              </div>
-              <div className="p-3 bg-[#111111]">
-                <p className="text-xs text-[#AAAAAA] truncate">{result.title}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function PlaceholderTab({ label }: { label: string }) {
-  return (
-    <div className="flex flex-col items-center justify-center h-full gap-4 text-[#444444]">
-      <Sparkles className="w-12 h-12" />
-      <p className="text-lg font-semibold">{label} Generation</p>
-      <p className="text-sm text-[#333333]">Coming soon — powered by CodePark AI</p>
-    </div>
-  )
-}
+type TextType = typeof TYPES[number];
+type Tone     = typeof TONES[number];
 
 export default function CreatePage() {
-  const [activeTab, setActiveTab] = useState('video')
+  const [tab,        setTab]        = useState<"images" | "text">("images");
+  const [prompt,     setPrompt]     = useState("");
+  const [model,      setModel]      = useState("flux-pro");
+  const [ratio,      setRatio]      = useState("1:1");
+  const [textType,   setTextType]   = useState<TextType>("Social Caption");
+  const [tone,       setTone]       = useState<Tone>("Professional");
+  const [loading,    setLoading]    = useState(false);
+  const [imageUrl,   setImageUrl]   = useState<string | null>(null);
+  const [textResult, setTextResult] = useState("");
+  const [copied,     setCopied]     = useState(false);
+  const textBoxRef = useRef<HTMLDivElement>(null);
+
+  const selectedModel = MODELS.find(m => m.id === model)!;
+
+  async function generateImage() {
+    if (!prompt.trim()) return;
+    setLoading(true);
+    setImageUrl(null);
+    try {
+      const res = await fetch("/api/generate/image", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt, model, aspectRatio: ratio }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Generation failed");
+      setImageUrl(data.imageUrl);
+      toast.success("Image generated!", { description: `${selectedModel.credits} credits used` });
+    } catch (e: unknown) {
+      toast.error("Generation failed", { description: e instanceof Error ? e.message : "Please try again" });
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function generateText() {
+    if (!prompt.trim()) return;
+    setLoading(true);
+    setTextResult("");
+    try {
+      const res = await fetch("/api/generate/text", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt, type: textType.toLowerCase().replace(" ", "_"), tone: tone.toLowerCase() }),
+      });
+      if (!res.ok) { const d = await res.json(); throw new Error(d.error); }
+      const reader = res.body!.getReader();
+      const dec = new TextDecoder();
+      let acc = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const lines = dec.decode(value).split("\n");
+        for (const line of lines) {
+          if (line.startsWith("data: ")) {
+            const raw = line.slice(6);
+            if (raw === "[DONE]") break;
+            try { acc += JSON.parse(raw).text ?? ""; setTextResult(acc); } catch {}
+          }
+        }
+      }
+      toast.success("Content generated!", { description: "2 credits used" });
+    } catch (e: unknown) {
+      toast.error("Failed", { description: e instanceof Error ? e.message : "Please try again" });
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function copyText() {
+    await navigator.clipboard.writeText(textResult);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+    toast.success("Copied to clipboard");
+  }
 
   return (
-    <div className="flex flex-col h-screen bg-[#0A0A0A] text-white overflow-hidden">
-      {/* Header */}
-      <header className="flex-shrink-0 px-6 pt-6 pb-0">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#00FF87] to-[#7C3AED] flex items-center justify-center">
-            <Sparkles className="w-4 h-4 text-black" />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold">Create</h1>
-            <p className="text-xs text-[#AAAAAA]">AI-powered media generation</p>
-          </div>
+    <div className="flex flex-col h-full">
+      <header className="h-[60px] flex items-center justify-between px-6 border-b border-[#2C271F] shrink-0">
+        <div className="flex items-center gap-3">
+          <span className="text-sm font-medium text-[#F2EDE6] tracking-wide">Create</span>
+          <span className="font-mono text-[10px] text-[#6B5E50] border border-[#2C271F] px-2 py-0.5 rounded-[4px]">[ ai_studio ]</span>
         </div>
-
-        {/* Sub-tabs */}
-        <div className="flex items-center gap-1 border-b border-[#2A2A2A]">
-          {MAIN_TABS.map((tab) => {
-            const Icon = tab.icon
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-5 py-3 text-xs font-bold tracking-widest transition-all border-b-2 -mb-px ${
-                  activeTab === tab.id
-                    ? 'border-[#00FF87] text-[#00FF87]'
-                    : 'border-transparent text-[#555555] hover:text-[#AAAAAA]'
-                }`}
-              >
-                <Icon className="w-3.5 h-3.5" />
-                {tab.label}
-              </button>
-            )
-          })}
-        </div>
+        <button
+          onClick={tab === "images" ? generateImage : generateText}
+          disabled={!prompt.trim() || loading}
+          className={cn(
+            "flex items-center gap-2 h-8 px-4 rounded-[8px] text-[12px] font-semibold",
+            "bg-[#C8A882] text-[#111009] hover:bg-[#BFA070]",
+            "transition-[background-color,transform,opacity] duration-150 active:scale-[0.97]",
+            (!prompt.trim() || loading) && "opacity-40 pointer-events-none"
+          )}
+        >
+          {loading ? <Loader2 style={{ width: 13, height: 13 }} className="animate-spin" /> : <Sparkles style={{ width: 13, height: 13 }} />}
+          Generate
+        </button>
       </header>
 
-      {/* Content */}
-      <div className="flex-1 overflow-hidden p-6">
-        {activeTab === 'video' && <VideoTab />}
-        {activeTab === 'image' && <ImageTab />}
-        {activeTab === 'music' && <PlaceholderTab label="Music" />}
-        {activeTab === 'voice' && <PlaceholderTab label="Voice" />}
-        {activeTab === '3d' && <PlaceholderTab label="3D" />}
+      <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6 max-w-[820px] mx-auto w-full">
+        {/* Tab switcher */}
+        <div className="flex gap-1 p-1 bg-[#1A1712] border border-[#2C271F] rounded-[10px] w-fit">
+          {(["images", "text"] as const).map(t => (
+            <button
+              key={t}
+              onClick={() => setTab(t)}
+              className={cn(
+                "flex items-center gap-1.5 h-7 px-3 rounded-[7px] text-[12px] font-medium capitalize",
+                "transition-[background-color,color] duration-150 active:scale-[0.97]",
+                tab === t ? "bg-[#C8A882] text-[#111009]" : "text-[#6B5E50] hover:text-[#A89880]"
+              )}
+            >
+              {t === "images" ? <ImageIcon style={{ width: 12, height: 12 }} /> : <FileText style={{ width: 12, height: 12 }} />}
+              {t === "images" ? "Images" : "Text"}
+            </button>
+          ))}
+        </div>
+
+        {/* Prompt */}
+        <div className="bg-[#1A1712] border border-[#2C271F] rounded-[12px] p-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="font-mono text-[10px] text-[#6B5E50] tracking-wider">{"{ prompt }"}</span>
+            <span className="font-mono text-[10px] text-[#6B5E50]">{prompt.length}/1000</span>
+          </div>
+          <textarea
+            value={prompt}
+            onChange={e => setPrompt(e.target.value)}
+            maxLength={1000}
+            placeholder={tab === "images" ? "Describe the image you want to create…" : "Describe the content you want to generate…"}
+            rows={4}
+            className="w-full bg-transparent text-[#F2EDE6] placeholder:text-[#6B5E50]/60 text-[14px] resize-none focus:outline-none leading-relaxed"
+          />
+        </div>
+
+        {tab === "images" ? (
+          <>
+            {/* Model selector */}
+            <div>
+              <p className="font-mono text-[10px] text-[#6B5E50] mb-2 tracking-wide">MODEL</p>
+              <div className="grid grid-cols-3 gap-2">
+                {MODELS.map(m => (
+                  <button
+                    key={m.id}
+                    onClick={() => setModel(m.id)}
+                    className={cn(
+                      "p-3 rounded-[10px] border text-left",
+                      "transition-[border-color,background-color] duration-150 active:scale-[0.97]",
+                      model === m.id
+                        ? "border-[#C8A882] bg-[#C8A882]/8"
+                        : "border-[#2C271F] bg-[#1A1712] hover:border-[#3A3328]"
+                    )}
+                  >
+                    <p className="text-[12px] font-semibold text-[#F2EDE6]">{m.label}</p>
+                    <p className="text-[11px] text-[#6B5E50] mt-0.5">{m.desc}</p>
+                    <p className="font-mono text-[10px] text-[#C8A882] mt-1.5">{m.credits} credits</p>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Aspect ratio */}
+            <div>
+              <p className="font-mono text-[10px] text-[#6B5E50] mb-2 tracking-wide">ASPECT RATIO</p>
+              <div className="flex gap-2">
+                {RATIOS.map(r => (
+                  <button
+                    key={r}
+                    onClick={() => setRatio(r)}
+                    className={cn(
+                      "h-8 px-3 rounded-[8px] text-[12px] font-mono",
+                      "transition-[background-color,color,border-color] duration-150 active:scale-[0.97]",
+                      ratio === r
+                        ? "bg-[#C8A882]/15 text-[#C8A882] border border-[#C8A882]/40"
+                        : "text-[#6B5E50] hover:text-[#A89880] border border-[#2C271F]"
+                    )}
+                  >
+                    {r}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Generate button */}
+            <button
+              onClick={generateImage}
+              disabled={!prompt.trim() || loading}
+              className={cn(
+                "w-full flex items-center justify-center gap-2 h-10 rounded-[10px]",
+                "bg-[#C8A882] text-[#111009] text-[13px] font-semibold",
+                "hover:bg-[#BFA070] hover:shadow-[0_0_20px_rgba(200,168,130,0.25)]",
+                "transition-[background-color,box-shadow,transform,opacity] duration-150 active:scale-[0.97]",
+                (!prompt.trim() || loading) && "opacity-40 pointer-events-none"
+              )}
+            >
+              {loading ? <Loader2 className="animate-spin" style={{ width: 14, height: 14 }} /> : <Sparkles style={{ width: 14, height: 14 }} />}
+              {loading ? "Generating…" : `Generate Image · ${selectedModel.credits} credits`}
+            </button>
+
+            {/* Result */}
+            {imageUrl && (
+              <div className="bg-[#1A1712] border border-[#2C271F] rounded-[12px] overflow-hidden">
+                <div className="relative">
+                  <Image src={imageUrl} alt="Generated" width={800} height={600} className="w-full object-cover" unoptimized />
+                  <div className="absolute top-3 right-3 flex gap-2">
+                    <a
+                      href={imageUrl}
+                      download="generated.png"
+                      className="flex items-center gap-1 h-7 px-3 rounded-[6px] text-[11px] font-medium bg-[#111009]/80 text-[#F2EDE6] hover:bg-[#111009] transition-[background-color] duration-150 backdrop-blur-sm"
+                    >
+                      <Download style={{ width: 11, height: 11 }} /> Save
+                    </a>
+                    <button
+                      onClick={() => { navigator.clipboard.writeText(imageUrl); toast.success("URL copied"); }}
+                      className="flex items-center gap-1 h-7 px-3 rounded-[6px] text-[11px] font-medium bg-[#111009]/80 text-[#F2EDE6] hover:bg-[#111009] transition-[background-color] duration-150 backdrop-blur-sm"
+                    >
+                      <Copy style={{ width: 11, height: 11 }} /> Copy URL
+                    </button>
+                  </div>
+                </div>
+                <div className="px-4 py-3 border-t border-[#2C271F]">
+                  <p className="text-[12px] text-[#6B5E50] font-mono">model: {model} · ratio: {ratio}</p>
+                </div>
+              </div>
+            )}
+          </>
+        ) : (
+          <>
+            {/* Content type */}
+            <div>
+              <p className="font-mono text-[10px] text-[#6B5E50] mb-2 tracking-wide">CONTENT TYPE</p>
+              <div className="flex flex-wrap gap-2">
+                {TYPES.map(t => (
+                  <button
+                    key={t}
+                    onClick={() => setTextType(t)}
+                    className={cn(
+                      "h-8 px-3 rounded-[8px] text-[12px] font-medium",
+                      "transition-[background-color,color,border-color] duration-150 active:scale-[0.97]",
+                      textType === t
+                        ? "bg-[#C8A882]/15 text-[#C8A882] border border-[#C8A882]/40"
+                        : "text-[#6B5E50] hover:text-[#A89880] border border-[#2C271F]"
+                    )}
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Tone */}
+            <div>
+              <p className="font-mono text-[10px] text-[#6B5E50] mb-2 tracking-wide">TONE</p>
+              <div className="flex gap-2">
+                {TONES.map(t => (
+                  <button
+                    key={t}
+                    onClick={() => setTone(t)}
+                    className={cn(
+                      "h-7 px-2.5 rounded-[6px] text-[11px] font-medium",
+                      "transition-[background-color,color,border-color] duration-150 active:scale-[0.97]",
+                      tone === t
+                        ? "bg-[#8A9E8C]/20 text-[#8A9E8C] border border-[#8A9E8C]/40"
+                        : "text-[#6B5E50] hover:text-[#A89880] border border-[#2C271F]"
+                    )}
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Generate */}
+            <button
+              onClick={generateText}
+              disabled={!prompt.trim() || loading}
+              className={cn(
+                "w-full flex items-center justify-center gap-2 h-10 rounded-[10px]",
+                "bg-[#C8A882] text-[#111009] text-[13px] font-semibold",
+                "hover:bg-[#BFA070] hover:shadow-[0_0_20px_rgba(200,168,130,0.25)]",
+                "transition-[background-color,box-shadow,transform,opacity] duration-150 active:scale-[0.97]",
+                (!prompt.trim() || loading) && "opacity-40 pointer-events-none"
+              )}
+            >
+              {loading ? <Loader2 className="animate-spin" style={{ width: 14, height: 14 }} /> : <Zap style={{ width: 14, height: 14 }} />}
+              {loading ? "Generating…" : "Generate Text · 2 credits"}
+            </button>
+
+            {/* Text result */}
+            {textResult && (
+              <div className="bg-[#1A1712] border border-[#2C271F] rounded-[12px] overflow-hidden">
+                <div className="flex items-center justify-between px-4 py-2.5 border-b border-[#2C271F]">
+                  <span className="font-mono text-[10px] text-[#6B5E50]">output · {textType.toLowerCase()}</span>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={copyText}
+                      className="flex items-center gap-1 h-6 px-2.5 rounded-[5px] text-[11px] text-[#6B5E50] hover:text-[#A89880] hover:bg-[#221E18] transition-[background-color,color] duration-150"
+                    >
+                      {copied ? <CheckCircle2 style={{ width: 11, height: 11, color: "#8A9E8C" }} /> : <Copy style={{ width: 11, height: 11 }} />}
+                      {copied ? "Copied!" : "Copy"}
+                    </button>
+                    <button
+                      onClick={generateText}
+                      className="flex items-center gap-1 h-6 px-2.5 rounded-[5px] text-[11px] text-[#6B5E50] hover:text-[#A89880] hover:bg-[#221E18] transition-[background-color,color] duration-150"
+                    >
+                      <RefreshCw style={{ width: 11, height: 11 }} /> Regenerate
+                    </button>
+                  </div>
+                </div>
+                <div ref={textBoxRef} className="p-4 text-[13px] text-[#F2EDE6] leading-relaxed whitespace-pre-wrap max-h-[400px] overflow-y-auto">
+                  {textResult}
+                  {loading && <span className="inline-block w-2 h-4 bg-[#C8A882] ml-0.5 animate-pulse" />}
+                </div>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Recent generations */}
+        <section>
+          <h3 className="text-[16px] text-[#F2EDE6] mb-3" style={{ fontFamily: "var(--font-dm-serif)" }}>Recent Generations</h3>
+          <div className="grid grid-cols-3 gap-3">
+            {[
+              { type: "IMAGE", title: "Product hero shot", gradient: "from-[#B5704F]/50 to-[#C8A882]/30" },
+              { type: "TEXT",  title: "Instagram caption",  gradient: "from-[#8A9E8C]/50 to-[#C8A882]/25" },
+              { type: "IMAGE", title: "Brand banner",        gradient: "from-[#C8A882]/40 to-[#B5704F]/30" },
+            ].map((item, i) => (
+              <div key={i} className="bg-[#1A1712] border border-[#2C271F] rounded-[10px] overflow-hidden hover:border-[#3A3328] transition-[border-color] duration-150 cursor-pointer group">
+                <div className={cn("h-20 bg-gradient-to-br", item.gradient, "flex items-center justify-center")}>
+                  {item.type === "TEXT" ? <FileText style={{ width: 20, height: 20, color: "#8A9E8C" }} /> : <ImageIcon style={{ width: 20, height: 20, color: "#C8A882" }} />}
+                </div>
+                <div className="p-2.5">
+                  <span className="font-mono text-[9px] text-[#6B5E50]">{item.type}</span>
+                  <p className="text-[11px] text-[#F2EDE6] mt-0.5 truncate">{item.title}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
       </div>
     </div>
-  )
+  );
 }

@@ -49,8 +49,7 @@ export async function GET(req: NextRequest) {
         email:
           clerkUser?.emailAddresses?.[0]?.emailAddress ?? null,
         name:
-          clerkUser?.fullName ??
-          `${clerkUser?.firstName ?? ""} ${clerkUser?.lastName ?? ""}`.trim() ||
+          (clerkUser?.fullName ?? `${clerkUser?.firstName ?? ""} ${clerkUser?.lastName ?? ""}`.trim()) ||
           null,
         avatar_url: clerkUser?.imageUrl ?? null,
         credits: 50,
