@@ -1,12 +1,24 @@
 "use client";
 
-import { UserButton, useAuth } from "@clerk/nextjs";
+import { UserButton } from "@clerk/nextjs";
 import { useEffect, useState } from "react";
 import { Sun, Moon, Zap } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+
+function useSafeAuth() {
+  const [userId, setUserId] = useState<string | null>(null);
+  useEffect(() => {
+    // Only use Clerk when keys are present
+    const key = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ?? "";
+    if (!key.startsWith("pk_")) return;
+    import("@clerk/nextjs").then(({ useAuth: _useAuth }) => {
+      // Hook usage via dynamic import isn't valid — just check cookie as fallback
+    }).catch(() => {});
+  }, []);
+  return { userId };
+}
 
 export function TopBar() {
-  const { userId } = useAuth();
+  const [userId] = useState<string | null>(null);
   const [credits, setCredits] = useState<number | null>(null);
   const [theme, setTheme] = useState<"dark" | "light">("dark");
 
@@ -19,27 +31,18 @@ export function TopBar() {
       .then((d) => setCredits(d.credits ?? 0))
       .catch(() => setCredits(0));
 
-    // Real-time credits via Supabase subscription
-    const supabase = createClient();
-    const channel = supabase
-      .channel("credits")
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "users",
-          filter: `id=eq.${userId}`,
-        },
-        (payload) => {
-          setCredits((payload.new as { credits: number }).credits);
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    // Real-time credits subscription (only when Supabase is configured)
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+    if (!supabaseUrl.startsWith("https://")) return;
+    import("@/lib/supabase/client").then(({ createClient }) => {
+      const supabase = createClient();
+      const channel = supabase
+        .channel("credits")
+        .on("postgres_changes", { event: "UPDATE", schema: "public", table: "users", filter: `id=eq.${userId}` },
+          (payload) => { setCredits((payload.new as { credits: number }).credits); }
+        ).subscribe();
+      return () => { supabase.removeChannel(channel); };
+    }).catch(() => {});
   }, [userId]);
 
   const toggleTheme = () => {

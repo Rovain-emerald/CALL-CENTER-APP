@@ -33,9 +33,9 @@ const CHANGELOG = [
 ];
 
 const TYPE_CONFIG = {
-  feature:      { label: "Feature",      color: "#C8A882", bg: "#C8A882/12", border: "#C8A882/25" },
-  changelog:    { label: "Changelog",    color: "#8A9E8C", bg: "#8A9E8C/12", border: "#8A9E8C/25" },
-  announcement: { label: "Announcement", color: "#A89880", bg: "#A89880/12", border: "#A89880/25" },
+  feature:      { label: "Feature",      color: "#C8A882", borderColor: "#C8A882" },
+  changelog:    { label: "Changelog",    color: "#8A9E8C", borderColor: "#8A9E8C" },
+  announcement: { label: "Announcement", color: "#B5704F", borderColor: "#B5704F" },
 };
 
 export default function CommunityPage() {
@@ -45,7 +45,10 @@ export default function CommunityPage() {
     <div className="flex flex-col h-full">
       <header className="h-[60px] flex items-center justify-between px-6 border-b border-[#2C271F] shrink-0">
         <div className="flex items-center gap-3">
-          <span className="text-sm font-medium text-[#F2EDE6] tracking-wide">Community</span>
+          <div className="flex items-center gap-2">
+            <span className="w-[3px] h-4 rounded-full bg-[#C8A882] shrink-0" />
+            <span className="text-sm font-medium text-[#F2EDE6] tracking-wide" style={{ fontFamily: "var(--font-dm-serif)" }}>Community</span>
+          </div>
           <span className="font-mono text-[10px] text-[#6B5E50] border border-[#2C271F] px-2 py-0.5 rounded-[4px]">[ discord: online ]</span>
         </div>
       </header>
@@ -60,20 +63,39 @@ export default function CommunityPage() {
             { label: "Posts Today",   value: "34",    icon: MessageSquare,  mono: "posts.today" },
             { label: "Events / Week", value: "2",     icon: Calendar,       mono: "events.week" },
           ].map(({ label, value, icon: Icon, mono }) => (
-            <div key={label} className="bg-[#1A1712] border border-[#2C271F] rounded-[12px] p-4">
-              <p className="font-mono text-[10px] text-[#6B5E50] mb-3 tracking-wide">{mono}</p>
-              <p className="text-[26px] text-[#F2EDE6]" style={{ fontFamily: "var(--font-dm-serif)", letterSpacing: "-0.02em" }}>{value}</p>
+            <div key={label} className="bg-[#0F0D0A] border border-[#2C271F] rounded-[12px] p-4 hover:border-[#3A3328] transition-[border-color] duration-150">
+              <div className="flex items-center justify-between mb-3">
+                <p className="font-mono text-[10px] text-[#6B5E50] tracking-wide">{mono}</p>
+                <div className="w-6 h-6 rounded-[6px] bg-[#C8A882]/10 border border-[#C8A882]/15 flex items-center justify-center">
+                  <Icon style={{ width: 11, height: 11, color: "#C8A882" }} />
+                </div>
+              </div>
+              <p className="text-[28px] text-[#F2EDE6]" style={{ fontFamily: "var(--font-dm-serif)", letterSpacing: "-0.02em" }}>{value}</p>
               <p className="text-[11px] text-[#6B5E50] mt-1">{label}</p>
             </div>
           ))}
         </div>
 
         {/* Discord CTA */}
-        <div className="bg-[#1A1712] border border-[#5865F2]/20 rounded-[16px] p-6 flex flex-col sm:flex-row items-start sm:items-center gap-6">
-          <div className="w-14 h-14 rounded-[14px] bg-[#5865F2]/15 border border-[#5865F2]/25 flex items-center justify-center shrink-0">
+        <div className="bg-[#0F0D0A] border border-[#5865F2]/20 rounded-[16px] p-6 flex flex-col sm:flex-row items-start sm:items-center gap-6 relative overflow-hidden">
+          {/* Discord purple gradient blob */}
+          <div
+            className="absolute pointer-events-none"
+            style={{
+              top: "-40px",
+              right: "-20px",
+              width: "260px",
+              height: "260px",
+              borderRadius: "50%",
+              background: "radial-gradient(circle, #5865F280 0%, transparent 70%)",
+              opacity: 0.20,
+              filter: "blur(40px)",
+            }}
+          />
+          <div className="w-14 h-14 rounded-[14px] bg-[#5865F2]/15 border border-[#5865F2]/25 flex items-center justify-center shrink-0 relative z-10">
             <MessageSquare style={{ width: 24, height: 24, color: "#5865F2" }} />
           </div>
-          <div className="flex-1">
+          <div className="flex-1 relative z-10">
             <h2 className="text-[20px] text-[#F2EDE6] mb-1" style={{ fontFamily: "var(--font-dm-serif)" }}>
               Join our community
             </h2>
@@ -81,7 +103,7 @@ export default function CommunityPage() {
               Get help, share your work, and connect with other creators. 1,247 members and growing.
             </p>
           </div>
-          <div className="flex flex-col gap-2 shrink-0">
+          <div className="flex flex-col gap-2 shrink-0 relative z-10">
             <a
               href={discordInvite}
               target="_blank"
@@ -98,7 +120,8 @@ export default function CommunityPage() {
 
         {/* Announcements */}
         <section>
-          <h3 className="text-[16px] text-[#F2EDE6] mb-3 flex items-center gap-2" style={{ fontFamily: "var(--font-dm-serif)" }}>
+          <h3 className="text-[17px] text-[#F2EDE6] mb-4 flex items-center gap-2.5" style={{ fontFamily: "var(--font-dm-serif)" }}>
+            <span className="w-[3px] h-4 rounded-full bg-[#C8A882] shrink-0" />
             <Megaphone style={{ width: 15, height: 15, color: "#C8A882" }} />
             Platform Announcements
           </h3>
@@ -106,7 +129,11 @@ export default function CommunityPage() {
             {ANNOUNCEMENTS.map((a) => {
               const cfg = TYPE_CONFIG[a.type];
               return (
-                <div key={a.id} className="bg-[#1A1712] border border-[#2C271F] rounded-[12px] p-4 hover:border-[#3A3328] transition-[border-color] duration-150">
+                <div
+                  key={a.id}
+                  className="bg-[#0F0D0A] border border-[#2C271F] rounded-[12px] p-4 hover:border-[#3A3328] transition-[border-color] duration-150 overflow-hidden"
+                  style={{ borderLeft: `2px solid ${cfg.borderColor}` }}
+                >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1.5">
@@ -130,15 +157,19 @@ export default function CommunityPage() {
 
         {/* Changelog */}
         <section>
-          <h3 className="text-[16px] text-[#F2EDE6] mb-3 flex items-center gap-2" style={{ fontFamily: "var(--font-dm-serif)" }}>
+          <h3 className="text-[17px] text-[#F2EDE6] mb-4 flex items-center gap-2.5" style={{ fontFamily: "var(--font-dm-serif)" }}>
+            <span className="w-[3px] h-4 rounded-full bg-[#8A9E8C] shrink-0" />
             <GitMerge style={{ width: 15, height: 15, color: "#8A9E8C" }} />
             What&apos;s New
           </h3>
-          <div className="bg-[#1A1712] border border-[#2C271F] rounded-[12px] overflow-hidden">
+          <div className="bg-[#0F0D0A] border border-[#2C271F] rounded-[12px] overflow-hidden">
             {CHANGELOG.map((item, i) => (
-              <div key={item.version} className={`flex items-center gap-4 px-4 py-3 ${i < CHANGELOG.length - 1 ? "border-b border-[#2C271F]" : ""} hover:bg-[#1E1B15] transition-[background-color] duration-75`}>
-                <span className="font-mono text-[11px] text-[#C8A882] w-10 shrink-0">{item.version}</span>
-                <span className="text-[13px] text-[#A89880] flex-1">{item.title}</span>
+              <div
+                key={item.version}
+                className={`flex items-center gap-4 px-5 py-3.5 ${i < CHANGELOG.length - 1 ? "border-b border-[#2C271F]" : ""} hover:bg-[#141210] transition-[background-color] duration-75 group`}
+              >
+                <span className="font-mono text-[12px] text-[#C8A882] w-10 shrink-0 tracking-tight">{item.version}</span>
+                <span className="text-[13px] text-[#A89880] flex-1 group-hover:text-[#F2EDE6] transition-[color] duration-150">{item.title}</span>
                 <span className="font-mono text-[10px] text-[#4A4135] shrink-0">{item.date}</span>
               </div>
             ))}
@@ -147,19 +178,19 @@ export default function CommunityPage() {
 
         {/* Feature Requests */}
         <section>
-          <div className="bg-[#1A1712] border border-[#2C271F] rounded-[12px] p-5 flex items-center justify-between gap-4">
+          <div className="bg-[#0F0D0A] border border-[#2C271F] rounded-[12px] p-5 flex items-center justify-between gap-4 hover:border-[#3A3328] transition-[border-color] duration-150">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-[10px] bg-[#C8A882]/10 border border-[#C8A882]/20 flex items-center justify-center">
                 <Sparkles style={{ width: 16, height: 16, color: "#C8A882" }} />
               </div>
               <div>
-                <p className="text-[13px] font-medium text-[#F2EDE6]">Vote on upcoming features</p>
-                <p className="text-[12px] text-[#6B5E50]">Help shape the roadmap — your vote counts.</p>
+                <p className="text-[14px] font-medium text-[#F2EDE6]" style={{ fontFamily: "var(--font-dm-serif)" }}>Vote on upcoming features</p>
+                <p className="text-[12px] text-[#6B5E50] mt-0.5">Help shape the roadmap — your vote counts.</p>
               </div>
             </div>
             <a
               href="#"
-              className="flex items-center gap-1.5 h-8 px-4 rounded-[8px] text-[12px] font-medium border border-[#2C271F] text-[#A89880] hover:border-[#3A3328] hover:text-[#F2EDE6] transition-[border-color,color,transform] duration-150 active:scale-[0.97] shrink-0"
+              className="flex items-center gap-1.5 h-8 px-4 rounded-[8px] text-[12px] font-medium border border-[#2C271F] text-[#A89880] hover:border-[#C8A882]/40 hover:text-[#F2EDE6] transition-[border-color,color,transform] duration-150 active:scale-[0.97] shrink-0"
             >
               View Roadmap <ExternalLink style={{ width: 11, height: 11 }} />
             </a>

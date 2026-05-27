@@ -5,8 +5,12 @@ import { TopBar } from "@/components/layout/top-bar";
 import { MobileNav } from "@/components/layout/mobile-nav";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { userId } = await auth();
-  if (!userId) redirect("/sign-in");
+  // Skip auth redirect when Clerk keys are not configured (local preview without credentials)
+  const hasClerkKeys = !!(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?.startsWith("pk_"));
+  if (hasClerkKeys) {
+    const { userId } = await auth();
+    if (!userId) redirect("/sign-in");
+  }
 
   return (
     <div className="flex h-screen bg-[#111009] overflow-hidden">
